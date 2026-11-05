@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>阿明的打工計畫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Part-time job planner: light indigo/amber gingham, one navy time-card header band.
+   Layout: group trip planner — tab rail, shared budget bar, role panels with option cards — top tab rail, one working panel, route cards drawn as station timelines */
+:root{
+  --bg:#fdfdff; --paper:#ffffff; --paper2:#f4f5ff; --ink:#172033; --muted:#58607a; --line:#d9ddf0;
+  --accent:#4338ca; --accent-ink:#ffffff; --ticket:#d97706; --ticket-soft:#fef3c7;
+  --good:#2f7d32; --warn:#a8740c; --bad:#b4233c; --hl:#fde68a; --py:#b45309; --tl:#3f4fa8;
+  --check-a:rgba(67,56,202,.06); --check-b:rgba(217,119,6,.06);
+  --night:#172554; --night2:#1e3a8a; --moon:#fde68a; --pumpkin:#fbbf24;
+  --m-walk:#6b7280; --m-bike:#c98f00; --m-mrt:#e2601f; --m-bus:#2c7d45; --m-taxi:#9c7208;
+  --f-display:"LXGW WenKai TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",serif;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background-color:var(--bg);background-image:linear-gradient(var(--check-a) 50%,transparent 50%),linear-gradient(90deg,var(--check-b) 50%,transparent 50%);background-size:32px 32px;color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+.wrap{max-width:1100px;margin:0 auto;padding-inline:16px;padding-block:16px 48px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;padding-block:8px 14px;border-bottom:2px dashed var(--line)}
+h1{font-family:var(--f-display);font-size:clamp(26px,4.5vw,40px);line-height:1.3;margin:0;text-wrap:balance}
+h1 small{display:block;font-family:var(--f-body);font-size:13px;color:var(--muted);font-weight:400;letter-spacing:.02em;margin-top:4px}
+.from-badge{font-family:var(--f-mono);font-size:12px;border:1.5px solid var(--ticket);color:var(--ticket);padding:4px 10px;border-radius:4px;letter-spacing:.06em}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding-block:10px 0;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{font:500 13px var(--f-body);border:0;background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ticket);color:#fff}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;padding-block:12px;position:sticky;top:env(safe-area-inset-top,0px);background:rgba(255,255,255,.94);z-index:5;margin-inline:-8px;padding-inline:8px;border-radius:0 0 12px 12px}
+nav.tabs button{font:500 14px var(--f-body);border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible, select:focus-visible, input:focus-visible{outline:3px solid var(--ticket);outline-offset:2px}
+.panel{display:grid;gap:18px;grid-template-columns:minmax(0,1fr);align-content:start}
+h2{font-family:var(--f-display);font-size:24px;margin:0 0 4px;line-height:1.35}
+h3{font-size:16px;margin:0}
+.vn{color:var(--muted);font-size:13px}
+.btn{font:600 14px var(--f-body);border:0;background:var(--accent);color:var(--accent-ink);padding:8px 16px;border-radius:8px;cursor:pointer;line-height:1.5}
+.btn.alt{background:var(--ticket);color:#fff}
+header.top{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--night) 0%,var(--night2) 100%);color:#fff;border-radius:16px;padding-inline:18px;padding-block:14px 16px;margin-top:4px;border-bottom:0;min-height:120px}
+header.top h1{color:var(--pumpkin);position:relative;z-index:1;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+header.top h1 small{color:#e9d5ff}
+header.top rt{color:var(--moon)!important}
+header.top .from-badge{position:relative;z-index:1;border-color:var(--moon);color:var(--moon)}
+header.top .deco{position:absolute;right:12px;top:6px;height:110px;width:auto;max-width:55%;z-index:0;pointer-events:none}
+header.top{flex-direction:column;align-items:flex-start;justify-content:flex-start;padding-right:min(42%,320px)}
+@media (max-width:600px){header.top .deco{opacity:.4}header.top{padding-right:18px!important}}
+.btn.alt{background:var(--ticket);color:#fff}
+nav.tabs button[aria-selected="true"]{box-shadow:0 2px 0 var(--ticket)}
+.ticket{border-style:dashed}
+.ticket::before,.ticket::after{border-style:dashed}
+
+.toolbar{background:rgba(255,255,255,.9);border-radius:12px;padding:8px 12px;margin-top:10px;width:fit-content;max-width:100%}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn .tl-vi,.btn .tl-id{color:inherit;opacity:.85;font-size:11px;font-weight:400}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+select,input[type=text],input[type=time],input[type=number]{font:15px var(--f-body);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);max-width:100%}
+label{font-size:14px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* pinyin + translation */
+ruby.p{ruby-position:over;ruby-align:center}
+ruby.p rt{font-family:var(--f-body);font-size:.5em;font-weight:400;color:var(--py);letter-spacing:0;padding-inline:.12em}
+nav.tabs button[aria-selected="true"] .tl-vi,nav.tabs button[aria-selected="true"] .tl-id,nav.tabs button[aria-selected="true"] rt{color:inherit;opacity:.85}
+.tli .tl-id::before{content:" / "}
+.wrap[data-lang="id"] .tli .tl-id::before{content:""}
+.tl-vi,.tl-id{display:block;font-family:var(--f-body);font-size:12.5px;line-height:1.45;color:var(--tl);font-weight:400;letter-spacing:0;text-transform:none}
+.tl-id{font-style:italic}
+.tli .tl-vi,.tli .tl-id,.tl-inline .tl-vi,.tl-inline .tl-id{display:inline}
+.tl-inline .tl-vi::before{content:" · "}
+.tl-inline .tl-id::before{content:" / "}
+.notl .tl-vi,.notl .tl-id{display:none}
+.notl .warnbox .tl-vi,.notl .warnbox .tl-id{display:block}
+.wrap[data-lang="vi"] .tl-id,.wrap[data-lang="id"] .tl-vi,.wrap[data-lang="off"] .tl-vi,.wrap[data-lang="off"] .tl-id{display:none}
+.wrap[data-lang="id"] .tl-inline .tl-id::before{content:" · "}
+.wrap.pyon .script{line-height:2.3}
+.wrap.pyon .line .stop{line-height:2}
+
+/* draw */
+.draw-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.draw-grid{grid-template-columns:1fr}}
+.ticket{position:relative;background:var(--paper);border:1.5px solid var(--ticket);border-radius:10px;padding:18px 22px;min-height:170px;display:grid;align-content:center;gap:6px;overflow:hidden}
+.ticket::before,.ticket::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:#fff;border:1.5px solid var(--ticket);top:50%;transform:translateY(-50%)}
+.ticket::before{left:-12px}.ticket::after{right:-12px}
+.ticket .lab{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--ticket);text-transform:uppercase}
+.ticket .big{font-family:var(--f-display);font-size:clamp(28px,5vw,42px);line-height:1.35}
+.ticket .sub{color:var(--muted);font-size:14px}
+.ticket.spin .big{animation:flick .09s steps(1) infinite}
+@keyframes flick{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.ticket.spin .big{animation:none}}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.04em;color:var(--muted);font-weight:500}
+.tscroll{overflow-x:auto}
+tr.cur td{background:var(--hl)}
+.link{background:none;border:0;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;padding:0}
+
+/* route cards */
+.dest-head{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end}
+.dest-head>div{min-width:0;max-width:100%}
+.region{font-family:var(--f-mono);font-size:12px;color:var(--ticket);letter-spacing:.08em}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.opt{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:10px;align-content:start;min-width:0}
+.opt-title{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.tag{font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;background:var(--ticket-soft);color:var(--ticket);text-align:right}
+.tag .tl-vi,.tag .tl-id{color:var(--ticket);font-size:11px}
+.totals{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--f-mono);font-size:14px;border-top:1px dashed var(--line);padding-top:8px}
+.totals b{font-size:18px}
+.line{list-style:none;margin:0;padding:0;display:grid}
+.line li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;position:relative;padding-bottom:8px}
+.line li .dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--mc,var(--muted));background:var(--paper);margin-top:6px;z-index:1}
+.line li:not(:last-child)::before{content:"";position:absolute;left:6px;top:16px;bottom:-6px;width:3px;background:var(--mc,var(--line))}
+.line .stop{font-weight:600}
+.line .leg{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;font-size:13px;color:var(--muted);margin-top:2px}
+.chip{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:var(--mc);padding:1px 8px;border-radius:4px}
+.chip rt{color:#fff!important;opacity:.9}
+.legnote{flex-basis:100%}
+.rate{display:flex;gap:16px;flex-wrap:wrap;font-size:13px}
+.dots{letter-spacing:2px;color:var(--accent)}
+.note{font-size:13px;background:var(--paper2);border-radius:8px;padding:8px 10px}
+.cond{border-left:4px solid var(--ticket);background:var(--ticket-soft);padding:10px 14px;border-radius:0 8px 8px 0}
+
+/* plan */
+.plan-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px}
+@media (max-width:860px){.plan-grid{grid-template-columns:1fr}}
+.field{display:grid;gap:4px}
+.field select,.field input[type=text]{width:100%}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.checks label{border:1px solid var(--line);border-radius:12px;padding:4px 12px;cursor:pointer;background:var(--paper2)}
+.checks input{margin-right:4px}
+.script{font-family:var(--f-display);font-size:19px;line-height:1.9}
+.script p{margin:0 0 10px}
+.script .tl-vi,.script .tl-id{font-size:13.5px;margin-top:2px}
+.script .who{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--muted);display:block;margin-top:8px}
+.script mark{background:var(--hl);color:inherit;padding:0 3px;border-radius:3px}
+.warnbox{border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:8px 12px;font-size:14px}
+.warnbox .tl-vi,.warnbox .tl-id{color:var(--bad);opacity:.85}
+
+/* present */
+.stage{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:clamp(16px,3vw,32px);display:grid;gap:16px}
+.stage .script{font-size:clamp(20px,2.6vw,28px)}
+.timer{font-family:var(--f-mono);font-size:44px;font-variant-numeric:tabular-nums}
+.timer.low{color:var(--bad)}
+
+/* vocab */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.v{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.v .zh{font-family:var(--f-display);font-size:22px}
+.v .py{font-family:var(--f-mono);font-size:12px;color:var(--py)}
+.gram{display:grid;gap:10px}
+.gram .g{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.gram .pat{font-family:var(--f-display);font-size:20px;color:var(--accent)}
+.gram .ex{font-family:var(--f-display);font-size:18px}
+.guide{max-width:72ch}
+.guide h3{margin-top:14px}
+.guide li{margin-bottom:4px}
+.small{font-size:13px;color:var(--muted)}
+</style>
+<style>
+/* group-trip additions */
+.gbar{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.gbar .gname{font-family:var(--f-display);font-size:22px;line-height:1.4}
+.cchip{display:inline-block;background:var(--ticket-soft);color:var(--ticket);border-radius:8px;padding:2px 10px;font-size:13px;font-weight:600;margin-right:6px}
+.cchip .tl-vi{color:var(--ticket);font-weight:400;font-size:11px}
+.budget{flex:1 1 260px;min-width:0;display:grid;gap:4px}
+.meter{height:14px;border-radius:7px;background:var(--paper2);display:flex;overflow:hidden;border:1px solid var(--line)}
+.meter span{height:100%}
+.meter.over{border-color:var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 25%,transparent)}
+.mleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.mleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.btotal{font-family:var(--f-mono);font-size:14px}
+.btotal.over{color:var(--bad);font-weight:600}
+:root{--c-job:#4338ca;--c-sc:#d97706;--c-tr:#2c7d45;--c-mo:#0e7490;--c-class:#c7d2fe;--c-block:#e2e8f0}
+.opt.pick{border:2px solid var(--accent);box-shadow:0 0 0 4px rgba(67,56,202,.12)}
+.opt.clickable{cursor:pointer}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.badge{display:inline-block;font-size:11.5px;border-radius:6px;padding:1px 7px;margin:2px 4px 0 0;background:var(--paper2);color:var(--muted);border:1px solid var(--line)}
+.badge.in{color:var(--c-it);border-color:currentColor}
+.badge.outd{color:#b45309;border-color:currentColor}
+.badge.f{color:var(--bad);border-color:currentColor}
+.meals{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.food{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px;align-content:start}
+.food .fn{font-family:var(--f-display);font-size:19px;line-height:1.5}
+.days{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media (max-width:800px){.days{grid-template-columns:1fr}}
+.day{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:8px;align-content:start}
+.day h3{font-family:var(--f-display);font-size:20px}
+.slot{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:start;border-left:4px solid var(--sc,var(--line));background:var(--paper2);border-radius:0 8px 8px 0;padding:6px 8px}
+.slot .tm{font-family:var(--f-mono);font-size:12.5px;padding-top:3px}
+.slot .lb{font-weight:600}
+.slot .sm{font-size:12.5px;color:var(--muted);font-weight:400}
+.slot .w{font-size:12.5px;color:var(--bad);font-weight:500}
+.slot .ctl{display:flex;gap:2px}
+.mini{font:600 13px var(--f-body);border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:6px;padding:2px 7px;cursor:pointer;line-height:1.4}
+.mini:disabled{opacity:.35;cursor:default}
+.mini.add{border-color:var(--accent);color:var(--accent)}
+.adds{display:flex;flex-wrap:wrap;gap:6px}
+.fixed{font-size:13px;color:var(--muted);font-family:var(--f-mono)}
+.speakers{display:flex;flex-wrap:wrap;gap:6px}
+.speakers button{font:500 14px var(--f-body);border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:6px 12px;border-radius:10px;cursor:pointer}
+.speakers button[aria-pressed="true"]{background:var(--ticket);border-color:var(--ticket);color:#fff}
+.speakers button[aria-pressed="true"] rt{color:#fff}
+.phr{display:grid;gap:6px}
+.phr div{font-family:var(--f-display);font-size:18px}
+.sumtable td.num{font-family:var(--f-mono);text-align:right}
+.okbox{border:1px solid var(--good);color:var(--good);border-radius:8px;padding:8px 12px;font-size:14px}
+.rolehead{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.rolehead .who2{font-size:14px;color:var(--muted)}
+
+.gpick{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.gpick select{font-size:13px;padding:4px 8px;flex:1 1 auto;min-width:0;width:100%}
+.gpick label{display:flex;gap:6px;align-items:center;min-width:0;flex:1 1 200px;white-space:nowrap}
+.gbar>div{min-width:0;max-width:100%}
+.btn rt{color:inherit!important;opacity:.85}
+/* Canva helper: slide checklist + 16:9 screenshot overlay */
+.shot{position:fixed;inset:0;z-index:50;background:#120a1a;display:grid;grid-template-rows:auto minmax(0,1fr);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.shot-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;color:#e9d5ff;font-size:13px}
+.shot-bar select{font-size:14px;padding:4px 8px}
+.shot-hint{flex:1 1 200px;min-width:0}
+.shot-stage{display:grid;place-items:center;padding:8px 12px 14px;min-height:0}
+.slide{container-type:inline-size;aspect-ratio:16/9;width:min(100%,calc((100dvh - 80px)*16/9));max-width:100%;background-color:#fffdf9;background-image:linear-gradient(var(--check-a) 50%,transparent 50%),linear-gradient(90deg,var(--check-b) 50%,transparent 50%);background-size:3.2cqw 3.2cqw;border-radius:6px;overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr);color:var(--ink)}
+.s-head{background:linear-gradient(160deg,var(--night),var(--night2));color:#fff;padding:1.6cqw 3cqw;display:flex;align-items:baseline;justify-content:space-between;gap:2cqw}
+.s-head .s-title{font-family:var(--f-display);font-size:4.2cqw;color:var(--pumpkin);line-height:1.5}
+.s-head .s-meta{font-size:1.6cqw;color:#e9d5ff;white-space:nowrap}
+.s-head rt{color:var(--moon)!important}
+.s-body{padding:2.2cqw 3cqw;min-height:0;overflow:hidden;font-size:2cqw;line-height:1.6;display:grid;gap:1.4cqw;align-content:start}
+.s-cols{display:grid;grid-template-columns:1fr 1fr;gap:2.5cqw;min-height:0}
+.s-big{font-family:var(--f-display);font-size:6.5cqw;line-height:1.4;color:var(--accent)}
+.s-card{background:#fff;border:.15cqw solid var(--line);border-radius:1cqw;padding:1.2cqw 1.6cqw;min-width:0}
+.s-num{font-family:var(--f-mono);font-size:2.6cqw;font-weight:600}
+.s-row{break-inside:avoid;display:grid;grid-template-columns:13cqw minmax(0,1fr);gap:1.2cqw;align-items:baseline;border-left:.5cqw solid var(--sc,var(--line));background:#fff;border-radius:0 .8cqw .8cqw 0;padding:.5cqw 1cqw;margin-bottom:.6cqw}
+.s-row .t{font-family:var(--f-mono);font-size:1.6cqw;color:var(--muted)}
+.s-row .l{font-size:2cqw;font-weight:600}
+.slide .line li{padding-bottom:.4cqw}
+.slide .line .leg{font-size:1.4cqw}
+.slide .chip{font-size:1.3cqw}
+.slide .meter{height:2.2cqw;border-radius:1.1cqw}
+.s-meals{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4cqw}
+.s-meals .s-card{display:grid;gap:.4cqw;align-content:start}
+.s-ph{border:.25cqw dashed var(--ticket);border-radius:1cqw;display:grid;place-items:center;color:var(--ticket);font-size:1.6cqw;text-align:center;padding:1cqw;min-height:12cqw}
+.s-ba{display:grid;grid-template-columns:1fr auto 1fr;gap:2cqw;align-items:center}
+.s-ba .arrow{font-size:5cqw;color:var(--ticket)}
+</style>
+<style>
+/* job-planner additions */
+.persona{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center}
+.persona .pname{font-family:var(--f-display);font-size:30px;line-height:1.5}
+.meters{flex:1 1 300px;min-width:0;display:grid;gap:8px}
+.mrow{display:grid;gap:3px}
+.mrow .mt{display:flex;justify-content:space-between;gap:8px;font-size:13px;flex-wrap:wrap}
+.meter span.ok{background:var(--good)}
+.meter span.hrs{background:var(--c-sc)}
+.meter span.badfill{background:var(--bad)}
+.week{display:grid;grid-template-columns:34px repeat(7,minmax(0,1fr));gap:3px;font-size:11.5px}
+.week .dh{text-align:center;font-weight:600;font-size:13px;padding-bottom:2px}
+.week .col{position:relative;height:432px;background:repeating-linear-gradient(var(--paper) 0 35px,var(--line) 35px 36px);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.week .axis{position:relative;height:432px}
+.week .axis span{position:absolute;right:2px;font-family:var(--f-mono);font-size:10px;color:var(--muted);transform:translateY(-50%)}
+.blk{position:absolute;left:2px;right:2px;border-radius:4px;padding:1px 3px;line-height:1.25;overflow:hidden;font-size:11px}
+.blk.cls{background:var(--c-class);color:#1e1b4b}
+.blk.cond{background:repeating-linear-gradient(45deg,var(--c-block) 0 6px,#f8fafc 6px 12px);color:#334155;border:1px dashed #94a3b8}
+.blk.shift{background:var(--c-sc);color:#fff;font-weight:600}
+.blk.shift.badblk{background:var(--bad)}
+.blk.com{background:#d1fae5;color:#065f46;font-size:10px}
+.blk rt{color:inherit!important;opacity:.8}
+.weekwrap{overflow-x:auto}
+.weekwrap .week{min-width:560px}
+.sgrid td,.sgrid th{text-align:center}
+.sgrid td:first-child,.sgrid th:first-child{text-align:left}
+.sgrid input{width:18px;height:18px}
+.law{border:1px solid var(--accent);border-radius:12px;padding:12px 14px;background:var(--paper2)}
+.law li{margin-bottom:4px}
+.exp{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.slide .week{font-size:1.1cqw;gap:.3cqw;grid-template-columns:3cqw repeat(7,minmax(0,1fr))}
+.slide .week .col,.slide .week .axis{height:29cqw}
+.slide .week .col{background:repeating-linear-gradient(#fff 0 calc(33cqw/12 - 1px),var(--line) calc(33cqw/12 - 1px) calc(33cqw/12))}
+.slide .blk{font-size:1.05cqw}
+.slide .week .dh{font-size:1.4cqw}
+.slide .week .axis span{font-size:.9cqw}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+<div class="wrap pyon" id="wrap" data-lang="vi">
+  <header class="top">
+    <svg class="deco" viewBox="0 0 320 120" aria-hidden="true">
+      <g transform="translate(240 60)">
+        <circle r="44" fill="#fffbeb" stroke="#fbbf24" stroke-width="6"/>
+        <g stroke="#1e3a8a" stroke-width="3" stroke-linecap="round">
+          <line x1="0" y1="-36" x2="0" y2="-30"/><line x1="36" y1="0" x2="30" y2="0"/><line x1="0" y1="36" x2="0" y2="30"/><line x1="-36" y1="0" x2="-30" y2="0"/>
+          <line x1="0" y1="0" x2="0" y2="-24" stroke-width="4"/><line x1="0" y1="0" x2="17" y2="10" stroke-width="4"/>
+        </g>
+        <circle r="4" fill="#d97706"/>
+      </g>
+      <g transform="translate(150 28) rotate(-8)">
+        <rect width="62" height="76" rx="5" fill="#fff" stroke="#c7d2fe" stroke-width="2"/>
+        <rect width="62" height="16" rx="5" fill="#4338ca"/>
+        <g fill="#c7d2fe"><rect x="8" y="24" width="46" height="5" rx="2"/><rect x="8" y="35" width="46" height="5" rx="2"/><rect x="8" y="46" width="30" height="5" rx="2"/></g>
+        <rect x="8" y="57" width="20" height="10" rx="2" fill="#fbbf24"/>
+      </g>
+    </svg>
+    <h1>阿明的打工計畫<small>Kế hoạch đi làm thêm · nhóm 4 người</small></h1>
+    <span class="from-badge">住在 ▸ 高雄大寮 中山工商宿舍</span>
+  </header>
+  <div class="toolbar nopy">
+    <label for="grpSel">第幾組</label><select id="grpSel"></select>
+    <span>拼音</span>
+    <span class="seg" id="segPy"><button data-v="on" aria-pressed="true">有 ON</button><button data-v="off" aria-pressed="false">沒有 OFF</button></span>
+    <span>翻譯</span>
+    <span class="seg" id="segLang"><button data-v="vi" aria-pressed="true">Tiếng Việt</button><button data-v="off" aria-pressed="false">OFF</button></span>
+  </div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-t="draw" class="tl-inline" data-tl="Bốc thăm">① 抽籤</button>
+    <button role="tab" data-t="job" class="tl-inline" data-tl="Công việc">② 工作</button>
+    <button role="tab" data-t="sc" class="tl-inline" data-tl="Lịch tuần">③ 時間表</button>
+    <button role="tab" data-t="tr" class="tl-inline" data-tl="Đi lại">④ 交通</button>
+    <button role="tab" data-t="mo" class="tl-inline" data-tl="Thu chi">⑤ 收支</button>
+    <button role="tab" data-t="sum" class="tl-inline" data-tl="Tổng hợp">⑥ 總整理</button>
+    <button role="tab" data-t="slides" class="tl-inline" data-tl="Slide Canva">⑦ 簡報</button>
+    <button role="tab" data-t="present" class="tl-inline" data-tl="Trình bày">⑧ 上台說</button>
+    <button role="tab" data-t="board" class="tl-inline" data-tl="Kết quả">⑨ 結果板</button>
+    <button role="tab" data-t="vocab" class="tl-inline" data-tl="Từ vựng">生詞・句型</button>
+  </nav>
+
+  <!-- DRAW -->
+  <section class="panel" id="p-draw">
+    <div class="row">
+      <label for="grpCount" data-tl="Có bao nhiêu nhóm?">一共幾組？</label>
+      <input type="number" id="grpCount" min="2" max="10" value="8" style="width:72px">
+      <label for="pName" data-tl="Tên nhân vật của nhóm">角色的名字</label>
+      <input type="text" id="pName" value="阿明" style="width:120px">
+      <select id="pPro" aria-label="他／她"><option value="他">他（男生）</option><option value="她">她（女生）</option></select>
+    </div>
+    <div class="box" id="personaBox"></div>
+    <div class="draw-grid">
+      <div class="ticket" id="tkGoal"><span class="lab">Goal · 存錢目標</span><span class="big" id="tkGoalBig" style="font-size:clamp(22px,3.6vw,32px)">？</span><span class="sub" id="tkGoalSub"></span></div>
+      <div class="ticket" id="tkCond"><span class="lab">Conditions · 條件</span><span class="big" id="tkCondBig" style="font-size:clamp(22px,3.6vw,32px)">？</span><span class="sub" id="tkCondSub"></span></div>
+    </div>
+    <div class="row">
+      <button class="btn alt" id="btnDrawGoal" data-tl="Bốc mục tiêu">抽目標</button>
+      <button class="btn alt" id="btnDrawCond" data-tl="Bốc 2 điều kiện">抽兩個條件</button>
+    </div>
+    <div class="box"><h3 data-tl="Hoặc tự chọn mục tiêu và điều kiện">或者自己選</h3><div data-gpick></div></div>
+    <div class="box panel">
+      <h3 data-tl="Ai phụ trách phần nào?">誰負責什麼？</h3>
+      <div class="meals" id="namesBox"></div>
+    </div>
+    <div class="box">
+      <h3 data-tl="Kết quả bốc thăm">抽籤紀錄</h3>
+      <div class="tscroll"><table id="drawTable"><thead><tr><th>組</th><th data-tl="Nhân vật">角色</th><th data-tl="Mục tiêu">目標</th><th data-tl="Điều kiện">條件</th><th data-tl="Thành viên">組員</th></tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost" id="btnResetDraw" data-tl="Xóa hết, làm lại">全部重來</button>
+        <span class="small" id="resetMsg"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOB -->
+  <section class="panel" id="p-job" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="law" id="lawBox"></div>
+    <div class="opts" id="jobOpts"></div>
+    <div class="plan-grid">
+      <div class="box panel">
+        <div class="field"><span style="font-size:14px" data-tl="Vì sao chọn công việc này? (chọn được 2 ý)">為什麼選這個工作？（可以選兩個）</span><div class="checks" id="jobWhy"></div></div>
+        <div class="field"><label for="jobThough" data-tl="Tuy… Ví dụ: 要站很久 = phải đứng lâu">雖然…</label><input type="text" id="jobThough" placeholder="例：要站很久"></div>
+        <div class="field"><label for="jobBut" data-tl="Nhưng…">但是…</label><input type="text" id="jobBut" placeholder="例：離宿舍很近，很方便"></div>
+      </div>
+      <div class="box panel notl"><div class="rolehead"><h2>工作</h2><span class="who2" data-who="0"></span></div><div data-warn="job"></div><div class="script" id="scJob"></div></div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section class="panel" id="p-sc" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="box panel">
+      <h3 data-tl="Chọn ca làm: tick vào ngày muốn đi làm">選班：在要上班的那天打勾</h3>
+      <div class="tscroll"><table class="sgrid" id="scGrid"></table></div>
+    </div>
+    <div class="box panel">
+      <h3 data-tl="Lịch một tuần">一個禮拜的時間表</h3>
+      <div class="weekwrap" id="weekOut"></div>
+      <div class="mleg"><span><i style="background:var(--c-class)"></i>上課</span><span><i style="background:var(--c-sc)"></i>打工</span><span><i style="background:#d1fae5"></i>路上</span><span><i style="background:var(--c-block)"></i>條件（不能打工）</span></div>
+    </div>
+    <div class="plan-grid">
+      <div class="box panel">
+        <div class="field"><label for="scRest" data-tl="Ngày nghỉ làm gì? Ví dụ: 星期日在宿舍休息、跟朋友去逛街">休息的時候做什麼？</label><input type="text" id="scRest" placeholder="例：在宿舍休息、跟朋友去逛街"></div>
+      </div>
+      <div class="box panel notl"><div class="rolehead"><h2>時間表</h2><span class="who2" data-who="1"></span></div><div data-warn="sc"></div><div class="script" id="scSc"></div></div>
+    </div>
+  </section>
+
+  <!-- TRANSPORT -->
+  <section class="panel" id="p-tr" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="opts" id="trOpts"></div>
+    <div class="plan-grid">
+      <div class="box panel">
+        <div class="field"><span style="font-size:14px" data-tl="Vì sao chọn cách này?">為什麼選這個方法？（可以選兩個）</span><div class="checks" id="trWhy"></div></div>
+        <div class="field"><label for="trThough" data-tl="Tuy…">雖然…</label><input type="text" id="trThough" placeholder="例：比較貴"></div>
+        <div class="field"><label for="trBut" data-tl="Nhưng…">但是…</label><input type="text" id="trBut" placeholder="例：晚上比較安全"></div>
+      </div>
+      <div class="box panel notl"><div class="rolehead"><h2>交通</h2><span class="who2" data-who="2"></span></div><div data-warn="tr"></div><div class="script" id="scTr"></div></div>
+    </div>
+  </section>
+
+  <!-- MONEY -->
+  <section class="panel" id="p-mo" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="plan-grid">
+      <div class="box panel">
+        <h3 data-tl="Chi tiêu mỗi tháng">每個月的支出</h3>
+        <div class="exp" id="moExp"></div>
+        <div class="field"><label for="moIf" data-tl="Nếu không đủ tiền thì sao? Ví dụ: 如果錢不夠，就少買飲料">如果錢不夠，就…</label><input type="text" id="moIf" placeholder="例：少買飲料、換便宜的手機月租"></div>
+      </div>
+      <div class="box panel">
+        <h3 data-tl="Bảng thu chi một tháng">一個月的收支表</h3>
+        <div class="tscroll"><table class="sumtable" id="moTable"></table></div>
+      </div>
+    </div>
+    <div class="box panel notl"><div class="rolehead"><h2>收支</h2><span class="who2" data-who="3"></span></div><div data-warn="mo"></div><div class="script" id="scMo"></div></div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="panel" id="p-sum" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="plan-grid">
+      <div class="box panel">
+        <h2 data-tl="Tóm tắt kế hoạch">計畫一覽</h2>
+        <div class="tscroll"><table class="sumtable" id="sumTable"></table></div>
+      </div>
+      <div class="box panel">
+        <h2 data-tl="Cần cả nhóm bàn lại">要一起討論的問題</h2>
+        <div id="sumWarn"></div>
+      </div>
+    </div>
+    <div class="box panel">
+      <h2 data-tl="Lịch một tuần">一個禮拜的時間表</h2>
+      <div class="weekwrap" id="sumWeek"></div>
+    </div>
+    <div class="box panel">
+      <h2 data-tl="Trước và sau khi thảo luận">討論前、討論後</h2>
+      <p class="small" data-tl="Trước khi cả nhóm bàn bạc, bấm “記錄討論前”. Sửa xong, ghi lại nhóm đã đổi gì. Kết quả này vào slide trên Canva.">大家討論以前，先按「記錄討論前」。改好以後，寫下你們改了什麼。</p>
+      <div class="row"><button class="btn alt" id="btnBefore" data-tl="Lưu trạng thái trước khi thảo luận">記錄討論前</button><span class="small" id="beforeInfo"></span></div>
+      <div class="field"><label for="changesIn" data-tl="Nhóm đã sửa gì? Ví dụ: 把大夜班換成週末白班">我們改了什麼？</label><input type="text" id="changesIn" placeholder="例：把大夜班換成週末白班，每天可以睡八個小時"></div>
+    </div>
+    <div class="box panel">
+      <h2 data-tl="Khi thảo luận, có thể nói">討論的時候可以說</h2>
+      <div class="phr" id="phr"></div>
+    </div>
+  </section>
+
+  <!-- SLIDES -->
+  <section class="panel" id="p-slides" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="box panel">
+      <h2 data-tl="Làm slide trên Canva">Canva 簡報</h2>
+      <p data-tl="Bấm “截圖” để mở khung 16:9 sạch, chụp màn hình rồi dán vào Canva. Thêm ảnh hoặc video của nhóm bên cạnh.">按「截圖」會打開一個16:9的畫面。截圖以後貼到Canva，旁邊再放你們找的照片或影片。</p>
+      <div class="tscroll"><table id="slideTable"></table></div>
+    </div>
+    <div class="box panel">
+      <h3 data-tl="Quy tắc làm slide">做簡報的規則</h3>
+      <ul class="phr" style="padding-left:1.2em" id="slideRules"></ul>
+    </div>
+  </section>
+
+  <div class="shot notl" id="shot" hidden>
+    <div class="shot-bar nopy">
+      <button class="mini" id="shotPrev" aria-label="上一張">←</button>
+      <select id="shotSel"></select>
+      <button class="mini" id="shotNext" aria-label="下一張">→</button>
+      <span class="shot-hint">截圖：Windows 按 Win+Shift+S · Mac 按 Cmd+Shift+4 · 手機用截圖功能</span>
+      <button class="mini" id="shotClose">關閉 ✕</button>
+    </div>
+    <div class="shot-stage"><div class="slide" id="slide"></div></div>
+  </div>
+
+  <!-- PRESENT -->
+  <section class="panel notl" id="p-present" hidden>
+    <div class="gbar" data-gbar></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="speakers" id="speakers"></div>
+      <div class="row">
+        <span class="timer" id="timer">2:00</span>
+        <button class="btn" id="tStart">開始</button>
+        <button class="btn ghost" id="tNext">下一位 →</button>
+        <label class="row" style="gap:4px"><input type="checkbox" id="hideScript"><span>藏起稿子</span></label>
+      </div>
+    </div>
+    <div class="stage" id="stage"></div>
+  </section>
+
+  <!-- BOARD -->
+  <section class="panel" id="p-board" hidden>
+    <div class="box">
+      <h2 data-tl="Bảng kết quả">結果板</h2>
+      <p class="small" data-tl="Nghe xong mỗi nhóm, ghi lại số giờ làm và số tiền để dành. Cuối giờ bình chọn kế hoạch thông minh nhất.">每組說完，記下「一個禮拜打工幾個小時、一個月存多少錢」。最後投票：哪一組的計畫最聰明？</p>
+      <div class="tscroll"><table id="boardTable"><thead><tr><th>組</th><th data-tl="Công việc">工作</th><th data-tl="Giờ/tuần">每週工時</th><th data-tl="Để dành/tháng">每月存</th><th data-tl="Mục tiêu">目標</th><th data-tl="Phiếu “thông minh nhất”">最聰明</th></tr></thead><tbody></tbody></table></div>
+      <div class="row" style="margin-top:12px"><span class="small" id="boardSum"></span></div>
+    </div>
+    <div class="box">
+      <h3 data-tl="Người nghe: hỏi ít nhất một câu">聽眾任務（問問題）</h3>
+      <ul>
+        <li data-tl="Vì sao chọn công việc này?">你們為什麼選這個工作？</li>
+        <li data-tl="Một ngày ngủ được mấy tiếng?">他每天可以睡幾個小時？</li>
+        <li data-tl="Tan làm về ký túc xá có an toàn không?">下班回宿舍安全嗎？</li>
+        <li data-tl="Nếu không đạt mục tiêu thì làm sao?">如果存不到目標，怎麼辦？</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- VOCAB -->
+  <section class="panel" id="p-vocab" hidden><div id="vocabOut" class="panel"></div></section>
+</div>
+
+<script>
+const PYDATA=/*PYDATA*/{"c":{"yī":"一乊伊依医吚咿噫壱壹夁嫛嬄弌悘揖檹欹毉洢渏漪猗瑿畩祎禕稦繄蛜衣衤譩辷郼醫銥铱鷖鹥黟黳","dīng":"丁仃叮帄玎疔盯耵虰酊釘钉靪","kǎo":"丂拷攷栲洘烤考","qī":"七倛僛凄嘁妻娸悽慼慽戚捿攲期柒栖桤桼棲榿槭欺沏淒漆紪緀萋蛣褄諆諿蹊迉郪鏚霋魌鶈","shàng":"丄上尙尚恦緔绱鞝","xià":"丅下乤吓嚇圷夏夓懗梺疜睱罅鎼鏬","hǎn":"丆厈喊浫罕蔊豃阚鬫","wàn":"万卍卐妧忨捥杤澫瞣脕腕萬薍蟃贃贎輐鋄錽鎫","zhàng":"丈仗墇嶂帐帳幛扙杖涱痮瘬瘴瞕粀胀脹賬账障","sān":"三厁叁弎毵毶毿犙鬖","jī":"丌乩僟击刉刏剞勣叽咭唧喞嗘嘰圾基墼姫姬屐嵆嵇撃擊敧朞机枅槣樭機櫅毄激犄玑璣畸畿癪矶磯禨积稘稽積笄筓箕簊緝績缉羁羇羈耭肌芨虀襀覉覊觭譏譤讥賫賷赍跡跻蹟躋躸鄿銈錤鐖鑇鑙隮雞鞿韲飢饑饥鳮鶏鷄鸄鸡齎齏齑","bù":"不佈勏吥咘埗埠布廍怖悑抪捗柨步歨歩瓿篰簿荹蔀踄部郶鈈钚餔餢鿻","yǔ":"与予伛俁俣偊傴匬噳圄圉宇寙屿峿嶼庾懙挧敔斔斞楀瑀瘐祤禹窳羽與萭蘌語语貐鄅鋙雨頨麌齬龉","miǎn":"丏偭免冕勉勔喕娩愐汅沔渑湎澠眄絻緬缅腼葂鮸黽","gài":"丐乢匃匄戤摡杚概槩槪溉漑瓂盖葢蓋鈣钙阣隑","chǒu":"丑丒侴偢吜杻杽瞅矁醜魗","zhuān":"专叀塼嫥専專瑼甎砖磗磚膞蟤諯鄟顓颛鱄","qiě":"且","pī":"丕伓伾劈噼坯悂憵批披抷旇炋狉砒磇礔礕秛秠紕纰翍耚豾邳鈚鈹鉟銔錃錍铍霹駓髬魾鮍","shì":"世丗亊事仕似侍冟势勢卋叓呩嗜噬士奭媞嬕室崼市式弑弒徥忕恀恃戺拭揓是昰枾柹柿栻氏澨烒煶眂眎眡睗示礻筮簭舐舓螫襫視视觢試誓諟諡謚试谥豉貰贳軾轼适逝適遾釈释釋鈰鉃鉽銴铈飾餙餝饰鰘","qiū":"丘丠坵媝恘楸秋秌穐篍緧萩蓲蘒蚯蝵蟗蠤趥邱鞦鞧鰌鰍鳅鶖鹙龝","bǐng":"丙怲抦摒昞昺柄棅炳眪禀秉稟窉苪蛃邴鈵鉼陃鞆鞞餅餠饼","yè":"业亱僷叶啘嚈堨墷夜嶪嶫抴捙擛擪擫晔曄曅曗曳曵枼枽楪業歋殗洂液澲烨燁爗璍皣瞱瞸礏腋葉謁谒邺鄓鄴鍱鎑鐷靥靨頁页餣饁馌驜鵺鸈","cóng":"丛从叢婃孮従徖從悰慒樷欉淙漎潀潨灇爜琮藂誴賨賩","dōng":"东倲冬咚埬娻岽崠崬徚昸東氡氭涷笗苳菄蝀鮗鯟鶇鶫鸫鼕鿴","sī":"丝俬凘厮厶司咝嘶噝媤廝思恖撕斯楒榹泀澌燍磃禗禠私籭糹絲緦纟缌罳蕬虒蛳蜤螄蟖蟴鉰銯鋖鐁锶颸飔騦鷥鸶鼶","chéng":"丞乗乘呈城埕堘塍塖娍宬峸惩憕懲成承挰掁晟朾枨棖椉橙檙洆溗澂澄瀓珵珹畻碀程窚筬絾脀脭荿裎誠诚郕酲鋮铖騬鯎","diū":"丟丢銩铥","liǎng":"両两兩唡啢掚緉脼蜽裲魉魎","yǒu":"丣卣友庮懮有栯梄槱湵牖牗禉羐羑聈脜苃莠蜏酉銪铕黝","yán":"严厳啱嚴塩壛壧妍姸娫娮孍岩嵒嵓巌巖巗延揅昖楌檐櫩欕沿炎狿琂盐研硏碞礹筵簷綖芫莚蔅虤蜒言訁訮詽讠郔閆閻闫阎顏顔颜鹽麣黬","bìng":"並併倂偋傡垪寎并幷庰栤病竝誁靐鮩","sàng":"丧喪","gǔn":"丨惃滚滾磙緄绲蓘蔉衮袞輥辊鮌鯀鲧","jiū":"丩勼啾揂揪揫摎朻樛牞究糺糾纠萛赳阄鬏鬮鳩鸠","gè":"个個各硌箇虼鉻铬","yā":"丫压吖圧垭埡壓孲庘押枒桠椏錏鐚铔鴉鴨鵶鸦鸭","qiáng":"丬墙墻嫱嬙廧強强樯檣漒牆艢蔃蔷薔蘠","zhōng":"中伀刣妐幒彸忠柊汷泈炂盅籦終终舯蔠螤螽衳衷蹱鈡銿鍾鐘钟锺鴤鼨","jǐ":"丮几妀嵴己幾戟挤掎撠擠泲犱穖虮蟣魕魢鱾麂","jiè":"丯介借吤堺屆届岕庎徣悈戒楐犗玠琾界畍疥砎芥蚧蛶衸褯誡诫鎅骱魪","fēng":"丰仹偑僼凨凬凮妦寷封峯峰崶枫桻楓檒沣沨灃烽犎猦琒疯瘋盽砜碸篈葑蘴蜂蠭豐鄷酆鋒鎽鏠锋闏霻靊風飌风麷","guàn":"丱悹悺惯慣掼摜樌毌泴涫潅灌爟瓘盥矔礶祼罆罐貫贯躀遦鏆鑵雚鱹鸛鹳","chuàn":"串汌玔賗釧钏鶨","chǎn":"丳产冁刬剗剷啴嘽囅嵼幝摌斺旵浐滻灛燀產産簅繟蒇蕆諂譂讇谄辴鏟铲閳闡阐骣","lín":"临冧厸啉壣崊嶙斴晽暽林淋潾瀶燐獜琳璘痳瞵碄磷箖粦粼繗翷臨轔辚遴邻鄰鏻隣霖驎鱗鳞麐麟","zhuó":"丵劅卓叕啄啅圴妰娺彴撯擆擢斀斫斱斲斵晫梲椓櫡汋浊浞濁濯灂灼烵犳琸硺禚窡篧籗籱罬茁蠗諁諑謶诼酌鋜鐯鐲镯鵫鷟","zhǔ":"丶主嘱囑宔拄斸渚濐煑煮瞩矚罜詝陼麈","bā":"丷仈八叭哵夿岜峇巴巼扒捌朳柭玐疤笆粑羓芭蚆豝釛釟魞鲃鿱","wán":"丸刓完岏抏捖汍烷玩琓笂紈纨翫芄貦頑顽","dān":"丹儋勯匰单単單妉媅担擔殚殫甔瘅癉眈砃箪簞耼耽聃聸褝襌躭郸鄲頕鿕","wèi":"为位卫叞味喂墛媦尉慰懀未渭為煟熭爲犚猬璏畏碨緭罻胃苿菋蔚藯蘶蜼蝟螱衛衞褽謂讆讏谓躗躛軎轊鏏霨餧餵饖魏鮇鳚","jǐng":"丼井儆刭剄坓宑幜憬憼景暻汫汬璄璟璥穽肼蟼警阱頚頸颈","lì":"丽例俐俪傈儮儷凓利力励勵历厉厤厯厲吏呖唎唳嚦囇坜塛壢娳婯屴岦巁悧悷慄戾搮攊攦攭暦曆曞朸枥栃栎栗栛棙檪櫔櫟櫪欐歴歷沥沴涖溧濿瀝爄爏犡猁珕瑮瓅瓑瓥疠疬痢癘癧皪盭砅砺砾磿礪礫礰禲秝立笠篥粒粝糲綟脷苈苙茘荔莅莉蒚蒞藶蚸蛎蛠蜧蝷蠇蠣觻詈讈赲跞躒轢轣轹郦酈鉝鎘隶隷隸雳靂靋鬁鱱鱳鳨鴗鷅麗麜","jǔ":"举咀弆挙擧椇榉榘櫸欅沮矩筥聥舉莒蒟襷踽齟龃","piě":"丿苤鐅","fú":"乀伏佛俘冹凫刜匐咈哹垘孚岪巿幅幞弗彿怫扶拂服枎柫栿桴棴榑氟泭洑浮涪澓炥烰玸琈甶畉畐癁砩祓福稪符笰箙粰紱紼絥綍绂绋罘罦翇艀艴芙芣苻茀茯莩菔葍虙蚨蜉蝠袱襆襥諨踾輻辐郛鉘鉜韍韨颫髴鮄鮲鳧鴔鵩鶝黻","yí":"乁仪侇儀冝匜咦圯夷姨媐宐宜宧寲峓嶬嶷巸弬彛彜彝彞怡恞扅拸暆柂栘桋椬椸沂沶熪狋珆瓵疑痍眙移箷簃籎羠耛胰萓蛦螔衪袘觺訑詑詒誃謻讉诒貤貽贻跠迆迤迻遗遺鏔頉頤頥顊颐飴饴鸃","yì":"乂义亄亦亿伇伿佚佾俋億兿刈劓劮勚勩匇呓呭呹唈囈圛坄垼埶埸墿奕嫕嬑嬟寱屹峄嶧帟帠幆廙异弈弋役忆怈怿悒悥意憶懌懿抑挹掜撎敡斁易晹曀曎杙枍枻栧栺棭榏槸檍欥欭歝殔殪殹毅泆浂浥浳湙溢潩澺瀷炈焲熠熤熼燚燡燱獈玴異疫痬瘗瘞瘱癔益睪瞖硛秇穓竩縊繶繹绎缢羛義羿翊翌翳翼耴肄肊膉臆艗艺芅苅萟蓺薏藙藝蘙虉蛡蜴螠衵袣裔裛褹襼訲訳詍詣誼譯議讛议译诣谊豙豛豷貖賹贀跇軼轶逸邑醳醷釴鈠鎰鐿镒镱陭隿霬靾饐駅驛驿骮鮨鯣鶂鶃鶍鷁鷊鷧鷾鹝鹢黓齸","nǎi":"乃倷奶嬭廼氖疓艿迺釢","wǔ":"乄五仵伍侮俉倵儛午呒啎妩娬嫵庑廡忤怃憮捂摀旿橆武潕熓牾玝珷瑦甒碔舞躌鵡鹉","jiǔ":"久乆九乣奺杦汣灸玖紤舏酒镹韭韮","tuō":"乇仛侂咃托扡拕拖挩捝杔汑沰涶脫脱莌袥託讬飥饦驝魠","me":"么嚜濹癦麼","zhī":"之倁卮吱坧巵戠搘支枝栀梔椥榰汁汥泜疷知祗祬禔秓秖秪稙綕織织肢胑胝脂臸芝蘵蜘衼隻馶鳷鴲鼅","wū":"乌剭呜嗚圬屋巫弙杇歍汙汚污洿烏窏箼螐誈誣诬邬鄔鎢钨鰞鴮","zhà":"乍咤宱搾柞栅榨溠灹炸痄蚱詐诈醡霅","hū":"乎乯匢匫呼唿嘑垀寣幠忽恗惚戯昒曶歑泘淴滹烀膴苸虍虖謼軤轷雐","fá":"乏伐傠垡姂栰橃浌疺瞂砝笩筏罚罰罸茷藅閥阀","lè":"乐仂叻忇扐楽樂氻泐玏砳竻簕艻阞韷鰳鳓","yín":"乑冘吟噖嚚圁垠夤婬寅峾崟崯斦檭殥泿淫滛烎犾狺珢璌碒苂荶蔩蟫訔訚訡誾鄞鈝銀银霪鷣齗龂","pīng":"乒俜娉涄甹砯竮聠艵頩","pāng":"乓沗滂胮膖雱霶","qiáo":"乔侨僑喬嘺嫶憔桥槗樵橋犞癄瞧硚礄荍荞菬蕎藮谯趫鐈鞒鞽顦","hǔ":"乕俿唬汻浒滸琥萀虎虝錿鯱","guāi":"乖掴摑","yǐ":"乙以佁倚偯崺已庡扆攺敼旑旖椅檥矣礒笖舣艤苡苢蚁螘蟻裿踦輢轙逘酏釔鈘鉯钇顗鳦齮","yǐn":"乚吲尹嶾廴引朄檃櫽淾濥濦瘾癮磤蘟蚓螾讔赺趛輑鈏隐隠隱靷飮飲饮","ya":"乛呀","miē":"乜吀咩哶孭","qǐ":"乞企启呇唘啓啔啟婍屺岂晵杞棨玘盀綮綺绮芑諬豈起邔闙","yě":"也冶吔嘢埜壄漜野","xí":"习喺媳嶍席椺槢檄漝習蒵蓆薂袭襲覡觋謵趘郋鎴隰霫飁騱騽驨鰼鳛","xiāng":"乡厢啌廂忀楿欀湘瓖相稥箱緗缃膷芗葙薌襄郷鄉鄊鄕鑲镶香驤骧鱜麘","hù":"乥互冱冴嗀嚛婟嫭嫮岵帍弖怘怙戶户戸戽扈护摢昈枑楛槴沍沪滬熩瓠祜笏簄粐綔芐蔰護鄠鍙雽韄頀鱯鳠鳸鸌鹱","shū":"书倏倐儵叔姝尗抒掓摅攄書杸枢梳樞橾殊殳毹毺淑瀭焂瑹疎疏紓綀纾舒菽蔬跾踈軗輸输鄃陎鮛鵨","dǒu":"乧唞抖枓蚪鈄阧陡","shǐ":"乨使兘史始宩屎榁矢笶豕鉂駛驶","náng":"乪嚢囊欜蠰譨饢馕鬞","jiā":"乫佳傢加嘉埉夹夾家抸拁枷梜毠泇浃浹犌猳珈痂笳糘耞腵茄葭袈豭貑跏迦鉫鉿鎵镓麚鿼","jù":"乬俱倨倶具冣剧劇勮句埧埾壉姖寠屦屨岠巨巪怇怐怚惧愳懅懼拒拠据據昛歫洰澽炬烥犋秬窭窶簴粔耟聚苣虡蚷袓詎讵豦貗跙距踞躆遽邭醵鉅鋸鐻钜锯颶飓駏鮔","shí":"乭十埘塒姼实実寔實峕嵵拾时旹時榯湜溡炻石祏竍莳蒔蚀蝕識识辻遈鉐食飠饣鮖鰣鲥鼫鼭","mǎo":"乮冇卯夘峁戼昴泖笷蓩鉚铆","mǎi":"买嘪荬蕒買鷶","luàn":"乱亂釠","zī":"乲兹咨嗞姕姿孜孳孶崰嵫栥椔淄湽滋澬玆璾禌秶稵粢紎緇缁茊茲葘觜訾諮谘貲資赀资赼趑趦輜輺辎鄑鈭錙鍿鎡锱镃頾頿髭鯔鰦鲻鶅鼒齍龇","rǔ":"乳擩汝肗辱鄏","xué":"乴壆学學岤峃嶨斈泶澩燢穴茓袕觷踅雤鷽鸴","yǎn":"乵俨偃儼兖兗匽厣厴噞夵奄嵃巘巚弇愝戭扊抁掩揜曮棪椼檿沇渰渷演琰甗眼縯罨萒蝘衍裺褗躽遃郾酓隒顩魇魘鰋鶠黡黤黭黶鼴鼹齞齴龑","fǔ":"乶俌俛俯嘸府弣抚拊捬撨撫斧椨滏焤甫盙簠胕腐腑蜅輔辅郙釜釡頫鬴鳬黼","shā":"乷刹剎唦杀桬榝樧殺毮沙煞猀痧砂硰粆紗纱莎蔱裟鎩铩魦鯊鯋鲨","nǎ":"乸哪雫","gān":"乹亁凲坩尲尴尶尷忓攼杆柑泔漧玕甘疳矸竿筸粓肝芉苷迀酐魐鳱","suǒ":"乺唢嗩惢所暛溑琐琑瑣璅索褨鎈鎍鎖鎻鏁锁","yú":"乻于亐伃余俞兪堣堬妤娛娯娱嬩崳嵎嵛愉愚扵揄於旕旟杅桙楡楰榆欤歈歟歶渔渝湡漁澞牏狳玗玙瑜璵畭盂睮硢禺窬竽籅羭腴臾舁舆艅茰萮萸蕍蘛虞蝓螸衧褕覦觎諛謣谀踰輿逾邘酑鍝隅雓雩餘馀騟骬髃魚鮽鯲鰅鱼鷠鸆","cui":"乼","zhě":"乽啫禇者褶襵赭鍺锗","qián":"乾仱偂前墘媊岒忴扲拑掮揵榩橬歬潛潜濳灊箝羬蕁虔軡鈐鉗銭錢钤钱钳靬騚騝鰬黔黚","zhì":"乿俧偫傂儨制劕厔垁墆娡寘峙崻帙帜幟庢庤廌彘徏徝志忮憄懥懫扻挃挚掷搱摯擲擳旘晊智柣栉桎梽楖櫍櫛治洷滍滞滯潌瀄炙熫狾猘瓆畤疐痔痣礩祑秩秲秷稚稺穉窒筫紩緻置翐膣至致芖蛭螲袟袠製覟觗觯觶誌豑豒豸貭質贄质贽跱踬躓軽輊轾迣郅銍鋕鑕铚锧阤陟隲雉駤騭騺驇骘鯯鴙鷙鸷鿵","guī":"亀傀圭妫媯嫢嬀巂帰廆归摫椝槻槼櫷歸珪瑰璝瓌皈瞡硅窐胿膭茥螝袿規规邽郌閨闺騩鬶鬹鮭鲑龜龟","lǐn":"亃凛凜廩廪懍懔撛檁檩澟癛癝菻","jué":"亅倔傕决刔劂勪匷厥噱嚼孒孓屫崛嶥弡彏憠憰戄抉挗捔掘攫斍桷橛橜欔欮殌氒決泬灍焳熦爑爝爴爵獗玃玦玨珏瑴疦瘚矍矡砄絕絶绝臄芵蕝蕨虳蚗蟨蟩覐覚觉觖觼訣譎诀谲貜赽趉趹蹶蹷躩逫鈌鐍鐝钁镢駃鴂鴃鶌鷢龣","le":"了餎饹","ma":"亇吗嗎嘛嫲","zhēng":"争佂凧埩姃媜峥崝崢征徰徴徵怔挣掙揁炡烝爭狰猙癥眐睁睜筝箏篜聇蒸踭鉦錚钲铮鬇鯖鿇","èr":"二佴刵咡弍弐樲衈誀貮貳贰鉺","chù":"亍俶傗儊嘼埱处怵憷拀搐敊斶柷欪歜滀珿琡畜矗竌竐絀绌臅蓫處触觸諔豖踀鄐閦黜","kuī":"亏刲岿巋悝盔窥窺聧蘬虧闚顝","yún":"云伝勻匀囩妘愪昀橒沄涢溳澐熉畇眃秐筠筼篔紜縜纭耘耺芸蒷蕓郧鄖鋆雲","qí":"亓亝俟其剘圻埼奇岐岓崎嵜帺忯愭懠掑斉斊旂旗棊棋檱櫀歧淇濝猉玂琦琪璂畦疧碁碕祁祇祈祺禥竒簱籏粸綥綦綨纃耆肵脐臍艩芪萁萕蕲藄蘄蚑蚔蚚蛴蜝蜞螧蠐褀跂踑軝釮錡锜頎颀騎騏騹骐骑鬐鬿鯕鰭鲯鳍鵸鶀麒麡齊齐","sì":"亖佀価儩兕嗣四姒娰孠寺巳杫柶汜泗泤洍涘瀃牭祀禩竢笥耜肂肆蕼覗貄釲鈶鈻飤飼饲駟驷","suì":"亗埣嬘岁嵗旞檖歲歳澻煫燧璲睟砕碎祟禭穂穗穟繀繐繸襚誶譢谇賥遂邃鐆鐩隧韢","gèn":"亘亙揯搄茛","yà":"亚亜亞俹劜圔圠娅婭挜掗揠氩氬犽猰砑稏窫聐襾訝讶軋轧迓齾","xiē":"些揳楔歇猲蝎蠍","jí":"亟亼亽伋佶偮卙即卽及叝吉塉姞嫉岌嶯庴彶忣急愱戢揤极棘楫極槉橶檝殛汲湒潗濈焏狤疾瘠皀皍笈箿籍級级耤脊膌艥蒺蕀蕺藉螏襋觙诘谻趌踖蹐躤輯轚辑郆銡鍓鏶集雦雧霵鶺鷑鹡","tóu":"亠头投緰頭骰","wáng":"亡亾仼兦彺王莣蚟","kàng":"亢伉匟囥抗炕犺邟鈧钪閌","dà":"亣大汏眔","jiāo":"交僬嘄姣娇嬌峧嶕嶣憍椒浇澆焦燋礁穚簥胶膠膲艽芁茭茮蕉虠蛟蟭跤轇郊鐎驕骄鮫鲛鵁鷦鷮鹪","hài":"亥嗐妎害氦餀饚駭駴骇","hēng":"亨哼啈悙涥脝","mǔ":"亩坶姆峔拇母牡牳畆畒畝畞畮砪胟踇鉧","ye":"亪","xiǎng":"享亯响想晑曏蚃蠁銄響飨餉饗饟饷鮝鯗鱶鲞","jīng":"京亰兢坕坙婛巠惊旌旍晶橸泾涇猄睛秔稉粳精経經经聙腈茎荆荊莖菁葏驚鯨鲸鵛鶁鶄麖麠鼱","tíng":"亭停婷嵉庭廷楟榳渟筳聤莛葶蜓蝏諪邒閮霆鼮","liàng":"亮哴喨悢晾湸諒谅輌輛辆量鍄","qīn":"亲侵媇寴嵚嶔欽綅衾親誛钦顉駸骎鮼","bó":"亳仢伯侼僰勃博嚗帛愽懪挬搏欂浡淿渤煿牔犦犻狛猼瓝瓟礡礴秡箔簙肑胉脖膊舶艊苩葧蔔袯袹襏襮豰踣郣鈸鉑鋍鎛鑮钹铂镈餺馎馛馞駁駮驳髆髉鵓鹁","yòu":"亴佑侑又右哊唀囿姷孧宥峟幼柚牰狖祐糿蚴誘诱貁迶酭釉鼬","xiè":"亵伳偞偰僁卨卸噧塮夑娎媟屑屓屟屧嶰廨徢懈暬械榍榭泄泻洩渫澥瀉瀣灺炧炨烲焎燮爕獬祄禼糏紲絏絬緤繲绁缷薢薤蟹蠏褉褻謝谢躞邂鞢韰齂齘齛齥","dǎn":"亶伔刐抌掸撢撣澸玬瓭疸紞胆膽衴赕黕黮","lián":"亷劆匲匳嗹噒奁奩嫾帘廉怜慩憐梿槤櫣涟溓漣濂濓熑燫磏簾籢籨縺翴联聨聫聮聯臁莲蓮薕螊蠊裢褳覝謰蹥连連鎌鐮镰鬑鰱鲢","duǒ":"亸哚嚲垛垜埵奲挅挆朵朶椯綞缍趓躱躲軃","wěi":"亹伟伪偉偽僞儰厃壝委娓寪尾屗崣嵔徫愇捤撱斖暐梶椲洧浘濻瀢炜煒猥玮瑋痏痿硊磈緯纬腲艉芛苇荱葦蒍蔿薳諉诿踓鍡韑韙韡韪頠颹骩骪骫鮪鲔","rén":"人亻仁壬忈忎朲秂芢鈓銋魜鵀","shén":"什榊神鰰","zè":"仄夨崱庂捑昃昗汄","jǐn":"仅侭僅儘卺厪堇嫤尽巹廑槿漌瑾盡紧緊菫蓳謹谨錦锦饉馑","pū":"仆噗扑撲擈攴攵潽炇陠鯆","chóu":"仇俦儔嚋嬦帱幬怞惆愁懤栦椆燽畴疇皗稠筹籌紬絒綢绸菗薵裯讎讐踌躊酧酬醻雔雠","zhǎng":"仉幥掌涨漲礃长","jīn":"今兓埐堻嶜巾惍斤津珒琻矜矝砛筋紟荕衿襟觔金釒釿钅鹶黅","bīng":"仌仒兵冫冰掤氷鋲","réng":"仍礽辸陾","fó":"仏坲梻","sǎn":"仐伞傘糁糂糝糣糤繖鏒鏾饊馓","lún":"仑伦侖倫囵圇婨崘崙惀棆沦淪磮綸纶腀菕蜦踚輪轮錀陯鯩","cāng":"仓仺伧倉傖嵢沧滄濸獊舱艙苍蒼螥鶬鸧","zǎi":"仔宰崽","tā":"他嚃塌她它榙溻牠祂褟趿铊闧","fù":"付偩傅冨副咐坿复妇婦媍嬔富峊復椱父祔禣秿竎緮縛缚腹萯蕧蚥蚹蛗蝜蝮袝複褔覄覆訃詂讣負賦賻负赋赙赴輹鍑鍢阜阝附陚馥駙驸鮒鰒鲋鳆","xiān":"仙仚佡僊僲先嘕奾嬐屳廯忺憸掀攕暹杴枮氙珗祆秈籼繊纎纖纤苮莶薟褼襳跹蹮躚酰銛鍁铦锨韯韱馦鮮鱻鲜鶱","hóng":"仜吰垬妅娂宏宖弘彋汯泓洪浤渱潂玒玜硔竑竤粠紅紘紭綋红纮翃翝耾苰荭葒葓蕻虹谹谼鈜鉷鋐閎闳霐霟鞃魟鴻鸿黉黌","tóng":"仝佟僮勭同哃峂峝庝彤晍曈朣桐橦氃浵潼烔燑犝狪獞眮瞳砼秱童筩粡膧茼蚒詷赨酮鉖鉵銅铜餇鮦鲖","rèn":"仞仭任刃刄妊姙屻岃扨杒梕牣祍紉紝絍纫纴肕腍葚衽袵訒認认讱軔轫靭靱韌韧飪餁饪","qiān":"仟佥僉兛千圱圲奷婜孅孯岍悭愆慳扦拪掔搴撁攐攑攓杄檶櫏欦汘汧牵牽瓩竏签箞簽籤粁臤芊茾蚈褰諐謙谦谸迁遷釺鈆鉛钎铅阡雃韆顅騫骞鬜鬝鵮鹐","gǎn":"仠感扞擀敢桿橄澉皯秆稈笴簳衦赶趕鰔鱤鳡","gē":"仡割咯哥圪彁戈戓戨搁擱歌滒牫牱犵疙纥肐胳袼謌鎶鴐鴚鴿鸽鿔","dài":"代侢叇垈埭岱帒带帯帶廗待怠戴曃柋殆瀻玳瑇甙簤紿緿绐艜蚮袋襶貸贷蹛軑軚軩轪迨霴靆骀鴏黛黱","lìng":"令另呤炩","chào":"仦仯耖觘","cháng":"仧仩偿償兏嘗嚐塲嫦尝常徜瑺瓺甞肠腸膓苌萇鋿鏛長镸鱨鲿","sā":"仨挱挲撒","mù":"仫凩募墓幕幙慔慕暮木朰楘毣沐炑牧狇目睦穆縸艒苜莯蚞鉬钼雮霂鞪","men":"们們","fǎn":"仮反払返釩","yǎng":"仰佒傟养坱岟慃懩攁柍楧氧氱炴痒癢礢紻蝆軮養駚","zhòng":"仲众偅堹妕媑狆眾祌筗茽蚛衆衶諥重","pǐ":"仳匹噽嚭圮庀擗疋痞癖脴苉諀銢鴄","wò":"仴偓卧媉幄捾握擭斡枂楃沃涴渥濣焥瓁瞃硪肟腛臒臥雘齷龌","jiàn":"件俴健僭剑剣剱劍劎劒劔墹寋建徤擶旔栫楗榗毽洊涧渐溅漸澗濺瀳牮珔瞷磵礀箭糋繝腱臶舰艦荐葥蔪薦螹袸見覵见諓諫譼谏賎賤贱趝践踐踺轞釼鉴鋻鍳鍵鏩鐱鑑鑒鑬鑳键餞饯","jià":"价價嫁幏架榢稼駕驾","yǎo":"仸偠咬婹宎岆崾抭杳柼榚溔狕眑窅窈舀苭蓔闄騕鴢鷕齩","fèn":"份偾僨奋奮弅忿愤憤瀵瞓秎粪糞膹鱝鲼","dī":"仾低啲埞堤奃彽氐滴磾羝袛趆鍉镝隄鞮","fǎng":"仿倣旊昉昘瓬眆紡纺舫訪访髣鶭","pèi":"伂佩姵嶏帔斾旆沛浿珮蓜轡辔配霈馷","diào":"伄吊弔掉瘹窎窵竨蓧藋訋調调釣鈟銱鋽鑃钓铞铫雿魡","dùn":"伅囤庉楯沌潡炖燉盾砘碷踲逇遁遯鈍钝頓顿","wù":"伆兀务務勿卼坞塢奦婺寤屼岉嵍嵨忢悞悟悮戊扤敄晤杌溩焐熃物痦矹窹粅芴蘁誤误迕逜鋈阢隖雺雾霚霧靰騖骛鶩鹜鼿齀","xǐn":"伈","ài":"伌僾叆嗌塧壒嫒嬡愛懓懝暧曖爱瑷璦皧瞹砹硋碍礙艾薆譺鑀閡隘靉餲馤鱫鴱","jì":"伎偈兾冀剂剤劑哜嚌坖垍塈妓季寂寄峜廭彐彑徛忌悸惎懻技旡既旣暨暩曁梞檕檵洎济済漃漈濟瀱痵癠祭禝稩稷穄穊穧紀紒継繋繼纪继绩罽臮芰茍茤荠葪蓟蔇薊薺蘎蘮蘻裚覬觊計記誋諅计记跽迹际際霁霽驥骥髻鬾鯚鰶鰿鱀鱭鲚鲫鵋齌","xiū":"休俢修咻庥樇烋烌羞脙脩臹貅銝鎀鏅飍饈馐髤髹鮴鱃鵂鸺","jìn":"伒僸凚劤劲勁唫噤嚍墐壗妗嬧寖搢晉晋枃歏殣浕浸溍濅濜烬煡燼琎瑨璡璶祲禁縉缙荩藎覲觐賮贐赆近进進靳齽","fū":"伕呋垺夫妋姇娐孵尃怤懯敷旉柎玞痡砆稃筟糐紨綒肤膚荂荴衭豧趺跗邞鄜鈇鳺麩麬麱麸","tǎng":"伖倘偒傥儻帑戃曭淌爣矘躺鎲钂镋","yōu":"优優呦嚘幽忧怮悠憂攸櫌泑滺瀀纋耰逌鄾麀","huǒ":"伙夥漷火邩鈥钬","huì":"会僡儶匯卉哕喙嘒嚖圚嬒孈寭屶屷彗彙彚徻恚恵惠慧憓晦暳會槥橞檅櫘殨汇泋浍湏滙潓澮濊烩燴獩璤璯瘣瞺秽穢篲絵繢繪绘缋翙翽芔荟蔧蕙薈薉藱蟪詯誨諱譓譿讳诲賄贿鏸鐬闠阓靧頮顪颒餯","cuì":"伜倅啐啛忰悴毳淬濢焠疩瘁竁粋粹紣綷翆翠脃脆脺膬膵臎萃襊顇","chuán":"传傳圌暷椽篅舡舩船輲遄","chē":"伡俥唓砗硨莗蛼車车","yá":"伢厑厓堐岈崕崖涯漄牙猚玡琊瑘睚笌芽蚜衙齖","qiàn":"伣俔倩傔儙刋堑塹壍嬱嵌悓慊棈椠槧欠歉皘篏篟綪縴芡茜蒨蔳輤鰜","shāng":"伤傷商墒慯殇殤滳漡熵蔏螪觞觴謪鬺","chāng":"伥倀娼昌晿椙淐猖琩菖裮錩锠閶阊鯧鲳鼚","xùn":"伨侚卂噀奞巺巽徇愻殉殾汛潠狥稄蕈訊訓訙训讯賐迅迿逊遜鑂顨驯","xìn":"伩信囟孞焮脪舋衅訫軐釁阠顖馸","zhù":"伫佇住助坾墸壴嵀杼柱樦殶注炷疰眝砫祝祩竚筑筯箸築篫簗紵紸纻羜翥苎莇蛀註貯贮跓軴迬鉒鋳鑄铸霔馵駐驻麆","ze":"伬","xián":"伭咸唌啣妶娴娹婱嫌嫺嫻弦憪挦撏涎湺澖甉痫癇癎瞯礥稴絃胘舷藖蚿蛝衔衘誸諴賢贒贤輱醎銜閑閒闲鷳鷴鷼鹇鹹麙","nǔ":"伮努弩砮胬","gū":"估呱咕唂姑嫴孤柧橭沽泒笟箍箛篐罛苽菇菰蛄觚軱軲轱辜酤鈲鮕鴣鸪","nǐ":"伱你儗儞妳孴抳拟擬旎晲柅檷狔聻苨薿鈮隬馜鿭","nì":"伲匿堄嫟嬺屰惄愵昵暱氼溺眤睨縌胒腻膩誽迡逆","bàn":"伴办半坢姅怑扮拌柈湴瓣秚絆绊辦鉡靽","xù":"伵侐勖勗卹叙垿壻婿序怴恤慉敍敘旭昫朂槒欰殈汿沀洫溆漵潊烅烼煦獝珬盢瞁瞲稸絮続緒緖續绪续聓聟芧蓄藇藚訹賉酗銊魣鱮","líng":"伶凌刢囹坽夌姈婈孁岺彾掕昤朎柃棂櫺欞泠淩澪灵燯爧狑玲琌瓴皊砱祾秢竛笭紷綾绫羚翎聆舲苓菱蓤蔆蕶蘦蛉衑裬詅跉軨酃醽鈴錂铃閝陵零霊霗霛霝靈駖魿鯪鲮鴒鸰鹷麢齡齢龄龗","zhòu":"伷僽冑呪咒咮噣宙昼晝甃皱皺籀籒籕粙紂縐纣绉胄荮葤詋詶酎駎驟骤","shēn":"伸侁兟呻堔妽姺娠屾峷扟敒曑柛棽氠深燊珅甡甧申眒砷穼籶籸紳绅罙莘葠蓡蔘薓裑訷詵诜身駪鯓鯵鰺鲹鵢","qū":"伹佉匤区區坥屈岖岨岴嶇憈抾敺曲浀祛筁粬紶胠蛆蛐袪覰覻詘誳诎趋趨躯軀镼阹駆駈驅驱髷魼鰸鱋麯麴麹黢","cì":"伺佽刺刾庛朿栨次絘茦莿蛓螆賜赐","bēng":"伻傰嘣奟崩嵭痭祊絣綳绷閍","gā":"伽呷嘎嘠旮","diàn":"佃坫垫墊壂奠婝店惦扂橂橝殿淀澱玷琔电癜簟蜔钿阽電靛驔","hān":"佄哻嫨憨歛蚶谽酣頇顸馠鼾","mài":"佅劢勱卖売脈脉衇賣迈邁霡霢麥麦鿏鿺","dàn":"但僤啖啗啿嘾噉嚪帎弹弾彈惮憚憺旦柦氮沊泹淡澹狚疍癚禫窞繵腅萏蓞蛋蜑觛誕诞贉霮饏馾駳髧鴠","bǐ":"佊俾匕吡啚夶妣彼朼柀比沘疕秕笔筆箄粃聛舭貏鄙","zhāo":"佋啁妱巶招昭皽盄窼釗鉊鍣钊駋","cǐ":"佌此泚玼皉鮆","zuǒ":"佐左繓","tǐ":"体挮躰軆骵體鮧","zhàn":"佔偡占嶘战戦戰栈桟棧湛站綻绽菚蘸虥虦覱譧輚轏驏","hé":"何劾合咊和哬啝姀峆惒敆曷柇核楁毼河涸渮澕熆狢皬盇盉盍盒礉禾秴篕籺粭紇翮荷菏萂蚵螛覈訸詥貈郃鉌鑉闔阂阖鞨頜颌饸魺鲄鶡鹖麧齕龁龢","bì":"佖哔嗶坒堛壁奰妼婢嬖币幣幤庇庳廦弊弻弼彃必怭怶愊愎敝斃枈柲梐毕毖毙湢滗滭潷濞煏熚狴獘獙珌璧畀畁畢疪痹痺皕睤碧禆笓筚箅箆篦篳粊綼縪繴罼腷臂苾荜萆萞蓖蓽蔽薜蜌袐裨襅襞襣觱詖诐貱賁贔赑跸蹕躃躄避邲鄨鄪鉍鏎鐴铋閇閉閟闭陛鞸韠飶饆馝駜驆髀髲魓鮅鷝鷩鼊","tuó":"佗坨堶岮槖橐沱沲狏砣砤碢紽袉跎迱酡陀陁馱駄駝駞騨驒驮驼鮀鴕鸵鼉鼍鼧","shé":"佘舌虵蛇蛥","zuò":"作侳做唑坐岝岞座怍祚糳胙葃葄蓙袏阼飵","gōu":"佝勾沟溝篝簼緱缑袧褠鈎鉤钩鞲韝","nìng":"佞侫倿泞澝濘","qú":"佢劬忂戵斪朐欋氍淭渠灈璖璩癯瞿磲籧絇翑胊臞菃葋蕖蘧螶蟝蠷蠼衐衢躣軥鑺鴝鸜鸲鼩","yōng":"佣傭嗈噰墉壅嫞庸廱慵拥擁槦滽澭灉牅痈癕癰臃邕郺鄘鏞镛雍雝饔鱅鳙鷛","wǎ":"佤咓瓦砙邷","shi":"佦匙篒籂","kǎ":"佧卡垰胩裃鉲","bāo":"佨勹包孢枹煲笣胞苞蕔褒襃闁齙龅","huí":"佪囘回囬廻廽恛洄烠痐茴蚘蛔蛕蜖迴逥鮰","hè":"佫嗃垎壑寉焃煂熇燺爀癋碋穒翯袔褐謞賀贺赫靍靎靏鶮鶴鸖鹤","lǎo":"佬咾姥恅栳橑潦狫珯硓老耂荖蛯轑銠铑鮱","xiáng":"佭庠栙瓨祥絴翔詳详跭","gé":"佮匌呄嗝塥愅挌搿敋格槅櫊滆獦膈臵茖葛蛒裓觡諽輵轕镉閣閤阁隔革鞈鞷韐韚騔骼鬲鮯","yáng":"佯劷垟崵崸徉扬揚敭旸昜暘杨楊氜洋炀烊煬珜疡瘍眻禓羊羏蛘諹輰鍚鐊钖阦阳陽霷颺飏鰑鴹鸉","bǎi":"佰捭摆擺柏栢瓸百竡粨絔襬","fǎ":"佱法灋鍅","mǐng":"佲凕姳慏酩","hěn":"佷很狠詪","huó":"佸活秮秳","guǐ":"佹匦匭厬垝姽宄庋庪恑攱晷朹氿湀癸祪簋蛫蟡觤詭诡軌轨陒鬼","quán":"佺全啳埢姾婘孉巏惓拳搼权楾権權泉洤湶牷犈瑔痊硂筌絟縓荃葲蜷蠸觠詮诠跧踡輇辁醛銓铨闎顴颧騡鬈鰁鳈齤","tiāo":"佻庣恌挑旫祧聎","jiǎo":"佼侥僥儌剿劋孂徺徼恔憿挢捁搅摷撟撹攪敫敽敿晈暞曒湫湬灚烄煍燞狡璬皎皦矫矯笅絞繳纐绞缴脚腳臫蟜角譑賋踋鉸铰隦餃饺鱎","xíng":"侀刑型娙形洐滎硎荥行邢郉鈃鉶銒鋞钘铏陉陘","kǎn":"侃偘冚坎埳塪惂槛檻欿歁砍竷莰輡轗顑","zhí":"侄値值嗭埴執墌妷姪嬂慹执摭植樴殖淔漐犆瓡直禃絷縶聀职職膱蟙跖踯蹠躑軄釞鉄馽","gāi":"侅垓姟峐晐畡祴絯荄該该豥賅賌赅郂陔","lái":"來俫倈婡崃崍庲徕徠来梾棶涞淶猍琜筙箂莱萊逨郲錸铼騋鯠鶆麳","chǐ":"侈卶叺呎垑尺恥欼歯耻肔胣蚇袲袳裭褫鉹齒齿","kuǎ":"侉咵垮銙","guāng":"侊僙光咣垙姯桄洸灮炗炚炛烡珖胱茪輄銧黆","yīn":"侌凐喑噾囙因垔堙姻婣愔慇栶歅殷氤洇溵瘖禋秵筃絪緸茵荫蒑蔭裀諲銦铟闉阥阴陰陻隂霒霠鞇音韾駰骃","mǐ":"侎孊弭敉沵洣渳濔灖眫米粎羋脒芈葞蔝銤","zhū":"侏劯朱株槠橥櫧櫫洙潴瀦猪珠硃秼絑茱蛛蝫蠩袾誅諸诛诸豬跦邾銖铢駯鮢鯺鴸鼄","ān":"侒媕安峖庵桉氨痷盦盫腤菴萻葊蓭誝諳谙鞌鞍韽馣鵪鶕鹌","lù":"侓僇剹勎勠圥坴塶娽峍廘彔录戮摝椂樚淕淥渌漉潞熝琭璐甪盝睩硉碌祿禄稑穋箓簏簬簵簶籙粶膔菉蔍蕗虂螰觮賂赂趢路踛蹗輅轆辂辘逯醁錄録錴鏕鏴陆陸露騄騼鯥鵦鵱鷺鹭鹿麓","móu":"侔劺恈洠牟眸瞴繆缪蛑謀谋踎鉾鍪鴾麰","ér":"侕儿児兒唲峏栭洏粫而聏胹荋袻輀轜陑隭髵鮞鲕鴯鸸","dòng":"侗働冻凍动動垌姛峒恫戙挏栋棟洞湩硐絧胨胴腖迵霘駧","chà":"侘奼姹岔差汊紁詫诧","chī":"侙吃哧喫嗤噄妛媸彨彲摛攡瓻痴癡眵瞝笞粚絺胵蚩螭訵誺魑鴟鵄鸱黐齝","gōng":"供公功匑匔厷塨宫宮工幊弓恭愩攻杛熕碽糼肱蚣觥觵躬躳髸龏龔龚","zhōu":"侜周喌州徟掫洲淍炿烐珘盩矪粥舟謅譸诌诪賙赒輈輖辀週郮銂霌駲騆鵃鸼","rú":"侞儒嚅如嬬孺帤曘桇渪濡燸筎茹蒘蕠薷蝡蠕袽襦邚醹銣铷顬颥鱬鴑鴽","cún":"侟存拵","xiá":"侠俠匣峡峽敮暇柙炠烚狎狭狹珨瑕硖硤碬磍祫筪縀縖翈舝舺蕸赮轄辖遐鍜鎋陜陿霞騢魻鶷黠","lǚ":"侣侶儢吕呂屡屢履挔捋捛旅梠焒祣稆穞穭絽縷缕膂膐褛褸郘鋁铝","ta":"侤咜","zhēn":"侦偵嫃寊帧帪搸斟栕桢桭楨榛樼殝浈湞潧澵獉珍珎瑧甄眞真砧碪祯禎禛箴籈胗臻葴蒖蓁薽貞贞轃遉酙針鉁錱鍼针靕鱵","cè":"侧側冊册厕厠墄廁恻惻憡拺敇测測畟笧策筞筴箣簎粣荝萗萴蓛","kuài":"侩儈凷哙噲圦块塊墤巜廥快旝狯獪筷糩脍膾郐鄶鱠鲙","chái":"侪儕喍柴犲祡豺齜","nóng":"侬儂农哝噥檂欁浓濃燶禯秾穠脓膿蕽襛農辳醲","hóu":"侯喉帿猴瘊睺矦篌糇翭翵葔鄇鍭餱骺鯸","jiǒng":"侰僒冏囧泂浻澃炅炯烱煚煛熲燛窘綗褧迥逈颎","chěng":"侱庱徎悜睈逞騁骋","zhèn":"侲圳塦挋振揕敶朕栚瑱甽眹紖絼纼誫賑赈酖鋴鎭鎮镇阵陣震鴆鸩","jú":"侷僪啹婅局巈桔椈橘檋毩毱泦淗湨焗犑狊粷菊蘜趜跼蹫躹輂郹閰駶驧鵙鵴鶪鼰鼳","shù":"侸咰墅尌庶庻怷恕戍捒数數朮术束树樹沭漱潄澍濖竖竪絉腧荗蒁虪術裋豎述鉥錰鏣隃鶐","tǐng":"侹圢娗挺梃涏烶珽甼脡艇誔頲颋","shèn":"侺愼慎昚椹涁渗滲甚瘆瘮眘祳罧肾胂脤腎蜃蜄鋠","tuì":"侻娧煺蛻蜕褪退駾","nán":"侽南喃娚抩暔枏柟楠男畘莮諵遖难難","xiāo":"侾呺哓哮嘐嘵嚣嚻囂婋宯宵庨彇憢揱枭枵梟櫹歊毊消潇瀟灱灲焇猇獢痚痟硝硣穘窙箫簘簫綃绡翛膮萧萷蕭藃虈虓蟂蟏蟰蠨踃逍銷销霄驍骁髇髐魈鴞鴵鷍鸮","biàn":"便卞变変峅弁徧忭抃昪汳汴玣緶缏艑苄覍變辡辧辨辩辫辮辯遍釆閞","tuǐ":"俀僓腿蹆骽","xì":"係匸卌呬咥嚱墍屃屭忥怬恄慀戏戱戲椞欯滊潟澙熂犔盻矽磶禊稧系細綌繫细绤舃舄蕮虩衋覤赩趇郤釳闟阋隙隟霼餼饩鬩黖","cù":"促噈媨憱猝瘄瘯簇縬脨蔟誎趗踧蹙蹴蹵酢醋顣鼀","é":"俄吪囮娥峨峩涐珴皒睋磀莪蛾訛誐譌讹迗鈋鋨锇頟額额魤鰪鵝鵞鹅","qiú":"俅叴唒囚崷巯巰扏梂殏毬求汓泅浗渞湭煪犰玌球璆皳盚紌絿肍莍虬虯蛷蝤裘觓觩訄訅賕赇逎逑遒酋醔釚釻銶鮂鯄鰽鼽","xú":"俆徐蒣","guàng":"俇撗臦逛","kù":"俈喾嚳库庫廤焅瘔秙絝绔袴裤褲趶酷","jùn":"俊儁呁埈寯峻懏捃攈攟晙棞浚濬焌燇珺畯竣箘箟蜠郡陖餕馂駿骏鵔鵕鵘","liáng":"俍凉墚梁椋樑涼粮粱糧綡良踉輬辌鿄鿌","zǔ":"俎唨爼珇祖組组詛诅鎺阻靻","qiào":"俏僺峭帩撬撽殻窍竅翘翹誚譙诮躈陗鞘鞩韒髚","yǒng":"俑傛勇勈咏埇塎嵱彮怺恿悀惥愑愹慂柡栐永泳涌湧甬硧禜蛹詠踊踴鯒鲬","hùn":"俒倱圂慁掍混溷焝觨諢诨","jìng":"俓倞傹净凈境妌婙婧弪弳径徑敬曔桱梷浄淨瀞獍痉痙竞竟竧竫競竸胫脛誩踁迳逕鏡镜靓靖静靚靜","sàn":"俕帴散閐","pěi":"俖","sú":"俗","xī":"俙傒僖兮凞卥厀吸唏唽嘻噏夕奚嬆嬉屖嵠嶲巇希徆徯忚怸恓息悉悕惁惜憙扱扸昔晞晰晳曦析桸榽樨橀欷氥汐浠淅渓溪潝烯焁焈焟焬煕熄熈熙熹熺熻燨爔牺犀犠犧狶琋瘜皙睎瞦硒磎礂稀穸窸粞糦緆縘繥羲翕翖肸肹膝舾莃菥蒠蜥螅螇蟋蠵西覀觹觽觿譆谿豀豨豯貕赥邜郗鄎酅醯釸錫鏭鑴锡隵雟餏饻鯑鵗鸂鼷","lǐ":"俚兣娌峛峢峲李欚浬澧理礼禮粴蟸裏裡豊逦邐醴里鋰锂鯉鱧鲤鳢","bǎo":"保堡堢媬宝宲寚寳寶怉珤緥葆藵褓賲靌飹飽饱駂鳵鴇鸨","dì":"俤偙僀啇地坔埊墑墬娣媂嶳帝弟怟慸摕旳杕枤梊棣渧焍玓珶甋眱睇碲祶禘第締缔腣菂蒂蔕蝃螮諦谛踶递逓遞遰釱鉪","liǎ":"俩倆","jiǎn":"俭倹儉减剪劗囝堿弿彅戩戬拣挸捡揀揃撿暕枧柬梘检検檢減湕瀽瑐睑瞼硷碱礆笕筧简簡籛絸繭翦茧藆蠒裥襇襉襺詃謇謭譾谫趼蹇鐗锏鬋鰎鹸鹻鹼","huò":"俰咟嚯嚿奯惑或捇掝旤曤楇檴沎湱濩瀖獲癨眓矆矐砉祸禍穫耯臛艧获蒦藿蠖謋貨货鑊镬閄霍靃","xiào":"俲傚効咲啸嘋嘨嘯孝效敩斅斆校歗涍熽笑肖詨誟","pái":"俳徘排棑牌犤猅簰簲輫","biào":"俵鰾鳔","fèi":"俷剕厞吠屝废廃廢昲曊杮櫠沸濷狒疿痱癈肺胇芾萉費费鐨镄陫靅鯡鼣","fèng":"俸凤奉湗焨煈甮縫缝賵赗鳯鳳鴌","ǎn":"俺唵垵埯揞罯銨铵隌","bèi":"俻倍偝偹備僃备孛悖惫愂憊昁梖焙牬犕狈狽珼琲碚禙糒背苝蓓蛽被褙誖貝贝軰輩辈邶郥鄁鋇鐾钡鞁鞴骳","yù":"俼儥喅喐喩喻噊圫域堉妪媀嫗寓峪嶎庽彧御忬悆惐愈慾戫昱棛棜棫櫲欎欝欲毓浴淢淯滪潏澦灪焴煜燏燠爩狱獄玉琙瘉癒矞砡硲礇礖礜禦秗稢稶穥篽籞籲緎繘罭聿肀育艈芋芌茟蒮蓣蓹蕷薁蜟蜮袬裕誉諭譽谕豫軉輍轝逳遇遹郁醧鈺銉鋊錥鐭钰閾阈霱預预飫饇饫馭驈驭鬰鬱鬻魊鱊鳿鴥鴧鴪鵒鷸鸒鹆鹬龥","xīn":"俽噺妡嬜廞心忻惞新昕杺欣歆炘盺芯薪訢辛邤鈊鋅鑫锌馨馫","jiù":"倃僦匓匛匶厩咎就廄廏廐慦捄救旧柩柾桕欍殧疚臼舅舊鯦鷲鹫麔齨","yáo":"倄傜嗂垚堯姚媱尧尭峣嶢嶤徭愮揺搖摇摿暚榣滧烑爻猺珧瑤瑶磘窑窯窰繇肴蘨謠謡谣軺轺遙遥邎銚鎐顤颻飖餆餚鰩鳐","wǎn":"倇唍埦婉宛惋挽晚晥晩晼梚椀琬畹皖盌睕碗綩綰绾脘菀萖踠輓鋔","zòng":"倊昮猔疭瘲碂粽糉糭縦縱纵錝","guān":"倌关冠官棺瘝癏窤蒄覌観觀观関闗關鰥鱞鳏","tiǎn":"倎唺忝悿晪殄淟琠痶睓腆舔覥觍賟錪鍩靦餂","dào":"倒到噵悼椡檤焘燾瓙盗盜稲稻箌纛翢翿艔菿衜衟軇道","tán":"倓坛墰墵壇壜婒惔憛昙曇榃檀潭燂痰磹罈罎藫覃談譚譠谈谭貚郯醈醰錟锬顃餤","chuí":"倕垂埀捶搥棰椎槌箠腄菙錘鎚锤陲顀","xìng":"倖姓婞嬹幸性悻杏涬緈臖興荇莕鿿","péng":"倗堋塳弸彭憉挷朋棚椖槰樥熢硼稝竼篣篷纄膨芃莑蓬蘕蟚蟛輣錋鑝韸韼騯髼鬅鬔鵬鹏","hòu":"候厚后垕堠後洉豞逅郈鮜鱟鲎鲘","tì":"倜剃嚏嚔屉屜悌悐惕惖戻掦揥替朑楴歒殢洟涕瓋笹籊薙裼褅趯逖逷髰鬀","gàn":"倝凎咁干幹旰榦檊汵淦灨盰紺绀詌贑贛赣骭","suī":"倠哸夊浽滖濉熣眭睢綏芕荽荾葰虽雖鞖","chàng":"倡唱怅悵暢焻玚瑒畅畼誯韔鬯","jié":"倢偼傑刦刧刼劫劼卩卪婕媫孑尐岊崨嵥嶻巀幯截拮捷掶擮昅杢杰桀桝楬楶榤櫭洁滐潔疌睫碣礍竭節結絜结羯节莭蓵蜐蝍蠘蠞蠽衱袺訐詰誱讦踕迼鉣鍻鞊颉魝鮚鲒","kōng":"倥埪崆悾涳硿空箜躻錓鵼","juàn":"倦劵勌奆巻慻桊淃狷獧眷睊睠絭絹縳绢罥羂蔨鄄隽雋飬餋","zōng":"倧堫宗嵏嵕嵸惾朡棕椶熧猣磫稯綜緃緵综翪腙葼蝬豵踨踪蹤鍐鑁騌騣骔鬃鬉鬷鯮鯼","ní":"倪坭埿婗尼屔怩棿泥淣猊秜籾聣腝臡蚭蜺觬貎跜輗郳铌霓鯢鲵麑齯","zhuō":"倬拙捉桌棁棳槕涿炪穛穱蠿","wō":"倭唩挝撾涡涹渦猧窝窩莴萵蜗蝸踒","luǒ":"倮剆曪瘰癳臝蓏蠃裸躶","sōng":"倯凇娀崧嵩庺忪憽松枀枩柗梥檧淞濍硹菘蜙鍶鬆","lèng":"倰堎愣睖踜","zì":"倳剚字恣渍漬牸眥眦胔胾自芓茡荢","bèn":"倴坋坌捹撪桳渀獖笨輽逩","cǎi":"倸啋婇寀彩採毝睬綵跴踩采","zhài":"债債寨瘵砦","yē":"倻噎掖暍椰潱蠮","shà":"倽厦唼啑喢帹廈歃箑翜翣萐閯霎","qīng":"倾傾卿圊埥寈氢氫淸清蜻輕轻郬鑋靑青鲭","yīng":"偀啨嘤嚶婴媖嫈嬰孆孾应応愥應撄攖朠桜樱櫻渶煐珱瑛璎瓔甇甖碤礯緓纓绬缨罂罃罌膺英莺蘡蝧蠳褮譍譻賏軈鍈鑍锳霙韺鴬鶑鶧鶯鷪鷹鸎鸚鹦鹰","chēng":"偁僜憆摚撐撑柽棦橕檉泟浾爯牚琤瞠称稱穪竀緽罉蛏蟶赪赬鏳鏿鐣阷靗頳饓","ruǎn":"偄媆朊瑌瓀碝礝緛耎軟輭软阮","chǔn":"偆惷睶萶蠢賰","jiǎ":"假叚婽岬徦斚斝椵榎槚檟玾甲瘕胛賈贾鉀钾","ruò":"偌叒嵶弱楉渃焫爇箬篛若蒻鄀鰙鰯鶸","tí":"偍厗啼嗁崹徲惿提漽瑅碮禵稊綈緹绨缇罤苐荑蕛蝭褆謕趧蹄蹏遆醍銻鍗題题騠鮷鯷鳀鴺鵜鶗鶙鷤鹈","wēi":"偎危喴威媙嶶巍微愄揋揻椳楲渨溦烓煨燰縅萎葨葳薇蜲蝛覣詴逶隇隈鰃鰄鳂","piān":"偏囨媥犏篇翩鍂鶣","yàn":"偐傿厌厭咽唁喭嚥堰墕妟姲嬊嬿宴彥彦敥晏暥曕曣椻溎滟灎灔灧灩烻焔焰焱熖燄燕爓牪猒砚硯艳艶艷葕覎觃觾諺讌讞谚谳豓豔贋贗赝軅酀酽醶醼釅隁雁餍饜騐験騴驗驠验鬳鳫鴈鴳鷃鷰","è":"偔僫匎卾厄呃呝咢咹噩垩堊堮姶屵岋峉崿廅恶悪惡愕戹扼搤搹擜櫮歞歺湂琧砐砨硆礘腭苊萼蕚蚅蝁覨詻諤讍谔豟軛軶轭遌遏遻鄂鈪鍔鑩锷閼阏阨阸頞顎颚餓餩饿魥鰐鱷鳄鶚鹗齃齶","xié":"偕劦勰协協嗋垥奊峫恊愶拹挟挾携撷擕擷攜斜旪熁燲瑎綊緳纈缬翓胁脅脇脋膎蝢衺襭諧讗谐邪鞋鞵頡龤","chě":"偖扯撦","shěng":"偗渻省眚","chā":"偛叉嗏扠挿插揷杈疀肞臿艖銟鍤锸餷馇","huáng":"偟凰喤堭墴媓崲徨惶楻湟潢煌熿獚瑝璜癀皇磺穔篁篊簧艎葟蝗蟥諻趪遑鍠鐄锽隍韹餭騜鰉鱑鳇鷬黃黄","yān":"偣剦嫣嬮崦嶖恹懕懨樮淊淹湮漹烟焉焑煙珚硽篶胭腌臙菸鄢醃閹阉黫","yóu":"偤尢尤峳怣斿楢櫾沋油浟游犹猶猷由疣秞肬莜莸蕕蚰蝣訧輏輶逰遊邮郵鈾铀駀魷鮋鱿鲉","xǔ":"偦冔呴喣姁暊栩珝盨稰糈許詡许诩鄦醑","zhā":"偧劄吒哳喳奓扎抯挓揸摣柤査楂樝渣皶皻觰譇齄齇","cī":"偨呲疵縒蠀趀跐骴髊齹","bī":"偪屄楅榌毴螕豍逼鎞鰏鲾鵖","zǒng":"偬傯总惣愡捴揔搃摠燪総縂總蓗鏓","xún":"偱噚寻尋峋巡廵循恂揗攳旬杊栒桪樳毥洵浔潯灥燅燖珣璕畃紃荀荨蟳詢询鄩馴鱏鱘鲟","cāi":"偲猜","duān":"偳剬媏端耑褍鍴","ǒu":"偶吘呕嘔耦腢蕅藕","tōu":"偷偸婾媮鋀鍮","zá":"偺喒囋囐杂沯砸磼襍雑雜雥韴","lóu":"偻僂剅喽嘍娄婁廔慺楼樓溇漊熡耧耬艛蒌蔞蝼螻謱軁遱鞻髅髏","sǒu":"傁叜叟嗾擞擻櫢瞍籔薮藪","sù":"傃僳嗉塐塑夙嫊宿愫愬憟梀榡樎樕橚殐泝洬涑溯溸潚潥玊珟璛碿簌粛粟素縤肃肅膆莤蔌藗觫訴謖诉谡趚蹜速遡遬鋉餗驌骕鱐鷫鹔","xiā":"傄煆疨瞎虲虾蝦谺閕颬鰕","yuàn":"傆噮垸夗妴媛怨愿掾瑗禐肙苑衏裫褑褤院願","rǒng":"傇冗坈宂氄軵","nù":"傉怒搙","yùn":"傊孕恽惲愠慍枟熅熨緷緼縕腪蕴薀藴蘊运運郓鄆酝醖醞韗韞韫韵韻餫","jiǎng":"傋奖奨奬桨槳獎耩膙蒋蔣講讲顜","mà":"傌唛嘜杩榪犸獁睰礣祃禡罵閁駡骂鬕","bàng":"傍塝搒棒棓玤磅稖艕蒡蚌蜯謗谤鎊镑","diān":"傎厧嵮巅巓巔掂攧敁槇槙滇甸瘨癫癲蹎顚顛颠齻","táng":"傏唐啺坣堂塘搪棠榶樘橖溏漟煻瑭磄禟篖糃糖糛膅膛蓎螗螳赯踼鄌醣鎕闛隚餳餹饄饧鶶","hào":"傐号哠恏悎昊昦晧暤暭曍浩淏滈澔灏灝皓皜皞皡皥秏耗聕薃號鄗鎬顥颢鰝","shàn":"傓僐剡善墠墡嬗扇掞擅敾椫樿歚汕潬灗疝磰繕缮膳蟮蟺訕謆譱讪贍赡赸鄯釤銏鐥饍騸骟鱓鱔鳝","tàn":"傝僋叹嘆埮探歎湠炭碳舕賧","suō":"傞唆嗍娑摍桫梭睃簑簔縮缩羧莏蓑趖髿鮻","dǎi":"傣歹逮","zài":"傤儎再在扗洅縡載载酨","gǔ":"傦古唃啒嘏夃尳愲扢榖榾毂汩淈濲瀔牯皷皼盬瞽穀糓縎罟羖股脵臌蓇薣蛊蛌蠱詁诂谷轂逧鈷钴餶馉骨鹄鹘鼓鼔","bīn":"傧儐宾彬斌梹椕槟檳汃滨濒濱濵瀕玢瑸璸砏繽缤虨豩豳賓賔邠鑌镔霦顮","chǔ":"储儲処杵椘楚楮檚濋璴础礎褚鸀齭齼","nuó":"傩儺挪梛郍","cān":"傪参參叄叅喰嬠湌爘飡餐驂骖","lěi":"傫儡厽垒塁壘樏櫐灅癗矋磊磥礨絫耒腂蕌蕾藟蘽蠝誄讄诔鑸鸓","cuī":"催凗墔崔嶉慛摧榱槯獕磪縗缞鏙","zāo":"傮糟蹧遭醩","sǒng":"傱嵷怂悚愯慫楤竦耸聳駷","ào":"傲坳垇墺奡奥奧嫯岙岰嶴慠懊扷擙澳鏊隩驁骜鿫","zú":"傶卆卒哫崒崪族箤足踤踿鏃镞","chuǎng":"傸摤磢闖闯","chì":"傺勅勑叱啻彳恜慗憏懘抶敕斥杘湁灻炽烾熾痓痸瘈瘛硳翄翅翤翨腟赤趩跮遫鉓銐雴飭饎饬鶒鷘","shǎ":"傻儍","hàn":"傼垾屽岾悍憾捍撖撼旱晘暵汉汗涆漢瀚焊熯猂皔睅翰莟菡蘫蛿蜭螒譀釬銲鋎閈闬雗頷顄颔馯駻鶾","zhāng":"傽嫜张張彰慞暲樟漳獐璋章粻蔁蟑遧鄣餦騿鱆麞","piào":"僄勡嘌徱票","liàn":"僆堜媡恋戀楝殓殮浰湅潋澰瀲炼煉瑓練纞练萰錬鍊鏈链鰊","mán":"僈姏悗慲樠瞒瞞蛮蠻謾谩鞔顢饅馒鬗鬘鰻鳗","yíng":"僌営塋嬴攍楹櫿溁溋滢潆濙濚濴瀅瀛瀠瀯瀴灐灜熒營瑩盁盈籝籯縈茔荧莹萤营萦萾蓥藀蛍蝇蝿螢蠅覮謍贏赢迎鎣","zhuàn":"僎啭囀堟撰灷瑑篆篹籑腞蒃襈譔賺赚饌馔","xiàng":"像勨向嚮塂姠嶑巷橡珦缿萫蟓衖襐象銗鐌項项鱌","zǔn":"僔噂撙譐","pú":"僕匍圤墣濮獛璞瞨穙纀脯莆菐菩葡蒱蒲贌酺鏷镤","láo":"僗劳労勞哰唠嘮崂嶗憥朥浶牢痨癆磱窂簩蟧醪鐒铹顟髝鿲","chǎng":"僘厂厰场場廠惝敞昶氅鋹","liáo":"僚嘹嫽寥寮屪嵺嶚嶛廫憀敹暸漻燎爎獠璙疗療竂簝繚缭聊膋膫藔蟟豂賿蹘辽遼鐐飉髎鷯鹩","chán":"僝儃儳劖嚵壥婵嬋巉廛棎欃毚湹潹潺澶瀍瀺煘獑磛禅禪緾纏纒缠艬蝉蟬蟾誗讒谗躔鄽酁鋋鑱镡镵饞馋","bō":"僠剝剥哱啵嶓帗拨撥播波溊玻癶癷盋砵碆紴缽菠袚袰蹳鉢钵餑饽驋鮁鱍","chuǎn":"僢喘歂舛荈踳","tiě":"僣蛈銕鐡鐵铁驖鴩","sēng":"僧鬙","xiàn":"僩僴县咞哯垷壏姭娊娨宪岘峴憲撊晛橌涀瀗献獻现現県睍硍粯糮絤綫線縣线缐羡羨腺臔臽苋莧蜆誢豏鋧錎限陥陷霰餡馅麲鼸","lìn":"僯吝恡悋橉焛甐疄膦蔺藺賃赁蹸躏躙躪轥閵","gù":"僱凅固堌崓崮故梏棝牿痼祻稒錮锢雇顧顾鯝鲴","jiāng":"僵壃姜将將摪橿殭江浆漿畕畺疅疆礓繮缰翞茳葁薑螀螿豇韁鱂鳉","mǐn":"僶冺刡勄悯惽愍慜憫抿敃敏敯暋泯湣潣皿笢笽簢蠠閔閩闵闽鰵鳘黾","pì":"僻嚊媲嫓屁揊淠潎澼甓疈睥稫譬辟釽闢鷿鸊","sài":"僿嗮簺賽赛","dàng":"儅凼圵垱壋婸宕嵣愓档檔氹潒璗瓽盪瞊砀碭礑簜荡菪蕩蘯趤逿闣雼","xuān":"儇吅喧塇媗宣弲愃愋懁揎昍暄梋煊瑄睻矎禤箮縇翧翾萱萲蓒蕿藼蘐蝖蠉諠諼譞谖軒轩鋗鍹駽鰚","càn":"儏孱掺摻澯灿燦璨粲薒謲","án":"儑啽玵雸","tái":"儓台坮嬯抬擡旲枱檯炱炲箈籉臺苔菭薹跆邰颱駘鮐鲐","lán":"儖兰厱囒婪岚嵐幱惏懢拦攔斓斕栏欄欗澜瀾灆灡燣燷璼礷篮籃籣繿葻蓝藍蘭褴襕襤襴襽譋讕谰躝钄镧闌阑韊","méng":"儚冡幪懞曚朦橗檬氋溕濛甍甿盟瞢矇矒礞艨莔萌蒙蕄蘉虻蝱鄳鄸霿靀顭饛鯍鸏鹲鼆","níng":"儜凝咛嚀嬣宁寍寕寗寜寧拧擰柠檸狞獰甯聍聹苧薴鑏鬡鸋","qióng":"儝卭宆惸憌桏橩焪焭煢熍琼璚瓊瓗睘瞏穷穹窮竆笻筇舼茕藑藭蛩蛬赹跫邛銎","liè":"儠冽列劣劽哷埒埓姴巤挒捩擸栵洌浖烈烮煭犣猎猟獵睙聗脟茢蛚裂趔躐迾颲鬛鬣鮤鱲鴷","kuǎng":"儣夼懭","bào":"儤勽報忁报抱暴曓爆菢虣蚫袌豹趵鉋鑤铇靤骲髱鮑鲍","biāo":"儦墂幖彪摽杓标標淲滮瀌灬熛爂猋瘭磦穮脿膘臕蔈藨謤贆鏢鑣镖镳颩颮颷飆飇飈飊飑飙飚驃驫骉骠髟","zǎn":"儧儹噆寁揝撍攅攒攢昝桚趱趲","háo":"儫嗥嘷噑嚎壕椃毜毫濠獆獋獔竓籇蚝蠔諕譹豪貉","qìng":"儬凊庆慶掅櫦殸濪碃磬箐罄靘","chèn":"儭嚫榇櫬疢衬襯讖谶趁趂齓齔龀","téng":"儯幐滕漛疼痋籐籘縢腾藤虅誊謄邆駦騰驣鰧","lǒng":"儱垄垅壟壠拢攏竉篢陇隴龓","ráng":"儴勷瀼獽瓤禳穣穰蘘躟鬤","luó":"儸攞椤欏猡玀箩籮罖罗羅脶腡萝蘿螺覙覶覼逻邏鏍鑼锣镙饠騾驘骡鸁","léi":"儽壨嫘擂檑櫑欙瓃畾礌礧縲纍纝缧罍羸蔂蘲虆轠鐳鑘镭雷靁鱩鼺","nàng":"儾齉","yǔn":"允喗夽抎殒殞狁磒荺褞賱鈗阭陨隕霣馻齫齳","zān":"兂簪簮糌鐕鐟","yuán":"元円原厡厵员員园圆圎園圓垣塬媴嫄援杬榞榬橼櫞沅湲源溒爰猨猿獂笎緣縁缘羱茒蒝薗蚖蝝蝯螈袁謜貟贠轅辕邍邧酛鈨鎱騵魭鶢鶰黿鼋","xiōng":"兄兇凶匂匈哅忷恟汹洶胷胸訩詾讻賯","chōng":"充冲嘃徸忡憃憧摏沖浺珫罿翀舂艟茺衝蹖","zhào":"兆召垗旐曌枛棹櫂炤照燳狣瞾笊罩羄肁肇肈詔诏赵趙鮡","duì":"兊兌兑对対對怼憝憞懟濧瀩碓祋綐薱襨譈譵鐓镦队陮隊","kè":"克刻剋勀勊堁娔客尅恪愙氪溘碦礊緙缂艐課课锞騍骒","tù":"兎兔堍莵迌鵵","兙":"兙","dǎng":"党挡擋攩欓灙譡讜谠黨","dōu":"兜兠吺唗橷篼蔸都","fēn":"兝兺分吩哛帉昐朆棻氛竕紛纷翂芬衯訜躮酚鈖雰餴饙","máo":"兞堥旄枆毛氂渵牦犛矛罞茅茆蝥蟊軞酕錨锚髦髳鶜","兡":"兡","huǎng":"兤奛宺幌怳恍晃晄櫎炾熀縨詤謊谎","rù":"入嗕媷扖杁洳溽縟缛蓐褥鳰","nèi":"內内氝錗","liù":"六塯廇澑畂磟翏雡霤飂餾鬸鷚鹨","han":"兯爳","gòng":"共唝羾莻貢贡","tiān":"兲天婖添酟靔靝黇","xīng":"兴垶惺星曐煋猩瑆皨箵篂腥蛵觪觲謃騂骍鮏鯹","diǎn":"典嚸奌婰敟椣点猠碘蒧蕇跕踮點","jiān":"兼冿囏坚堅奸姦姧尖幵惤戋戔搛椷椾樫櫼歼殱殲湔瀐瀸煎熞熸牋犍猏玪瑊监監睷碊礛笺箋篯緘縑缄缣肩艰艱菅菺葌蒹蕑蕳虃覸豜豣鐧鑯間间鞬鞯韀韉餰馢鰹鲣鳒鳽鵳鶼鹣麉","shòu":"兽受售壽夀寿授涭狩獣獸痩瘦綬绶膄鏉","jiōng":"冂冋坰埛扃絅蘏蘔駉駫","mào":"冃冐冒媢帽愗懋暓柕楙毷瑁皃眊瞀耄芼茂萺蝐袤覒貌貿贸鄚鄮","rǎn":"冄冉姌媣染橪珃苒蒅","gāng":"冈冮刚剛堈堽岡掆杠棡牨犅疘矼綱纲缸罁罓罡肛釭鋼鎠钢","guǎ":"冎剐剮叧寡","gòu":"冓坸垢够夠姤媾彀搆撀构構煹茩覯觏訽詬诟購购遘雊","mì":"冖冪嘧塓宓宻密峚幂幎幦榓樒櫁汨沕泌淧滵漞濗熐祕秘簚糸羃蔤藌蜜覓覔覛觅謐谧鼏鿹","xiě":"写冩寫藛","jūn":"军君均姰桾汮皲皸皹碅莙菌蚐袀覠軍鈞銁銞鍕钧鮶鲪麇麏麕","mí":"冞弥彌戂擟攠瀰爢猕獼瓕祢禰糜縻蒾蘼袮詸謎谜迷醚醾醿釄镾靡鸍麊麋麛麿","zhǒng":"冢喠塚塜尰歱煄瘇种種穜肿腫踵","yuān":"冤剈囦嬽寃悁惌棩淵渁渆渊渕灁眢箢葾蒬蜎蜵裷駌鳶鴛鵷鸢鸳鹓鼘鼝","míng":"冥名嫇明暝朙榠洺溟猽眀眳瞑茗蓂螟覭鄍銘铭鳴鸣","kòu":"冦叩宼寇扣敂滱瞉窛筘簆蔲蔻釦鷇","tài":"冭太夳忲态態汰泰溙燤肽舦酞鈦钛","féng":"冯堸夆捀摓浲溄漨綘艂逢馮","kuàng":"况卝圹壙岲懬旷昿曠況爌眖眶矌矿砿礦穬絋絖纊纩貺贶軦邝鄺鉱鋛鑛黋","lěng":"冷","pàn":"冸判叛拚沜泮溿炍牉畔盼聁袢襻詊鋬鑻頖鵥","xiǎn":"冼尟尠崄嶮幰搟攇显櫶毨灦烍燹狝猃獫獮玁禒筅箲藓蘚蚬譣赻跣銑鍌险険險韅顕顯","qià":"冾圶帢恰愘殎洽硈髂","sōu":"凁嗖廀廋捜搜摉摗溲獀艘蒐蓃螋鄋醙鎪锼颼颾飕餿馊騪","měi":"凂媄媺嬍嵄挴毎每浼渼燘美躾鎂镁黣","tú":"凃図图圕圖圗塗屠峹嵞庩廜徒悇捈揬梌涂潳瘏稌筡腯荼菟蒤跿途酴鈯鍎馟駼鵌鶟鷋鷵","zhǔn":"准凖埻準綧","diāo":"凋刁刟叼奝弴彫殦汈琱瞗碉簓虭蛁貂雕鮉鯛鲷鳭鵰鼦","còu":"凑湊腠輳辏","ái":"凒啀嘊捱敱敳溰癌皑皚騃","chuàng":"凔创刱剏剙創怆愴","duó":"凙剫喥夺奪敓敚痥踱鈬鐸铎鮵","dú":"凟匵嬻椟櫝殰毒涜渎瀆牍牘犊犢独獨瓄皾碡蝳裻読讀讟读豄贕錖鑟韇韣韥騳髑黩黷","fán":"凡凢凣匥墦杋柉棥樊橎渢瀪瀿烦煩燔璠矾礬笲籵緐繁羳膰舤舧薠蘩蠜襎蹯鐇鐢钒鷭","jū":"凥匊娵婮居崌抅拘挶掬梮椐泃涺狙琚疽痀眗砠罝腒艍苴菹蜛裾諊趄跔踘鋦锔陱雎鞠鞫駒驹鮈鴡鶋","zhǐ":"凪劧只咫址坁夂帋怾恉扺抧指旨枳止汦沚洔淽疻砋祉紙纸芷茋藢衹襧訨趾軹轵酯阯黹","píng":"凭凴呯坪塀屏屛岼帡帲幈平慿憑枰檘泙洴淜焩玶瓶甁箳簈缾胓苹荓萍蓱蘋蚲蛢評评軿輧郱鮃鲆","kǎi":"凯凱剀剴嘅垲塏嵦恺愷慨暟楷蒈輆鍇鎧铠锴闓闿颽","dèng":"凳墱嶝櫈瞪磴邓鄧鐙镫隥","qiǎn":"凵嗛嵰槏浅淺繾缱肷脥膁蜸譴谴遣鑓","tū":"凸唋堗宊嶀怢捸涋湥痜禿秃突葖鋵鵚鼵","āo":"凹柪梎爊軪","chū":"出初岀摴樗貙齣","hán":"函凾含唅圅娢寒崡嵅晗梒浛涵澏焓琀甝筨肣虷蜬邗邯鋡韓韩魽鿰","záo":"凿鑿","dāo":"刀刂叨忉朷氘舠釖魛鱽","chuāng":"刅摐牎牕疮瘡窓窗窻","qiè":"切匧厒妾怯悏惬愜挈朅洯淁穕窃竊笡箧篋籡緁藒蛪踥郄鍥鐑锲鯜","kān":"刊勘堪嵁戡栞龕龛","cǔn":"刌忖","chú":"刍厨媰幮廚橱櫉櫥滁犓篨耡芻蒢蒭蕏藸蜍蟵豠趎蹰躇躕鉏鋤锄除雏雛鶵","wěn":"刎吻呡忟抆桽稳穏穩紊肳脗","huà":"划劃化夻婳嫿嬅崋摦杹枠桦槬樺澅画畫畵繣舙觟話諙諣譮话黊","lí":"刕剓剺劙厘喱嚟囄嫠孋孷廲悡斄杝梨梩梸棃樆漓灕犁犂狸琍璃瓈盠睝离穲竰筣篱籬糎縭纚缡罹艃荲菞蓠蔾藜蘺蜊蟍蠡蠫褵謧貍邌醨釐鋫錅鏫鑗離驪骊鯏鯬鱺鲡鵹鸝鹂黎黧","yuè":"刖妜嬳岄岳嶽恱悅悦戉抈捳月樾瀹爚玥礿禴篗籆籥籰粤粵蘥蚎蚏越跀跃躍軏鈅鉞钺閱閲阅鸑鸙黦龠","liú":"刘劉嚠媹嵧懰旈旒榴橊沠流浏瀏琉瑠瑬璢畄留畱疁瘤癅硫磂蒥蓅藰蟉裗遛鎏鎦鏐鐂镏镠飀飅飗馏駠駵騮驑骝鰡鶹鹠麍","zé":"则則唶啧嘖嫧帻幘択择擇樍歵沢泎泽溭澤皟瞔矠礋笮箦簀舴蔶蠌襗諎謮責賾责赜迮鸅齚齰","qù":"刞厺去呿唟耝覷觑趣閴闃阒麮鼁","shān":"删刪剼嘇圸埏姍姗山幓彡挻搧杉柵檆潸澘煽狦珊痁笘縿羴羶脠膻舢芟苫衫跚軕邖钐閊鯅","bié":"別别咇徶莂蛂襒蹩","páo":"刨匏咆垉庖炰爮狍袍褜軳鞄麃麅","guā":"刮劀栝歄煱瓜緺聒胍趏踻銽颪颳騧鴰鸹","gēng":"刯庚椩浭焿畊絚緪縆羮羹耕菮賡赓鶊鹒","kū":"刳哭圐堀崫扝枯桍矻窟跍郀骷鮬","duò":"刴剁堕墮墯尮嶞惰憜柁柮桗舵跢跥跺陊陏飿饳鵽","shuā":"刷唰","quàn":"券劝勧勸牶韏","guì":"刽刿劊劌匱嶡撌攰昋柜桂桧椢槶檜櫃炔猤癐瞶禬筀簂蓕襘貴贵跪鞼鱖鱥鳜","cuò":"剉剒厝夎挫措斮棤莝莡蓌逪銼錯锉错","xuē":"削疶蒆薛辥辪靴鞾","lá":"剌嚹揦旯砬磖","tī":"剔擿梯踢锑鷈鷉","pōu":"剖娝","wān":"剜塆壪婠帵弯彎湾潫灣蜿豌","duō":"剟咄哆嚉多夛崜掇敠敪毲畓裰","qíng":"剠勍夝情擎擏晴暒棾樈檠殑氰甠葝黥","dū":"剢厾嘟督醏闍阇","huō":"剨劐吙嚄攉耠豁鍃锪騞","shèng":"剩剰勝圣墭嵊晠榺橳琞盛聖胜蕂貹賸","dá":"剳匒呾哒妲怛沓炟燵畗畣笪答羍荙薘蟽詚跶躂达迏迖迚逹達鎉鐽阘靼鞑韃龖龘","chuān":"剶巛川氚猭瑏穿","tuán":"剸团団團慱抟摶槫檲漙篿糰鏄鷒鷻","pěng":"剻捧淎皏","piāo":"剽彯慓旚漂犥缥翲螵飃飄飘魒","kōu":"剾彄抠摳眍瞘芤","qiāo":"劁墝墽嵪幧悄敲橇毃燆硗磽繑缲趬跷踍蹺郻鄡鄥鍫鍬鐰锹頝骹","tāng":"劏嘡汤湯羰耥薚蝪蹚鏜鐋铴镗鞺鼞","mó":"劘嚤嚩嚰嫫尛庅摩摹擵模橅磨糢膜蘑謨謩谟饃饝馍髍魔魹麽","zhú":"劚孎曯欘泏灟炢烛燭爥瘃窋竹竺笁笜舳茿蠋蠾躅逐钃鱁","kēng":"劥吭坑妔挳摼牼硁硜硻誙銵鍞鏗铿阬","shào":"劭卲哨娋潲睄紹綤绍袑邵","mò":"劰唜嗼圽塻墨妺嫼寞帓帞昩暯末枺歾歿殁沫湐漠瀎爅獏瘼皌眜眽眿瞐瞙砞礳秣粖絈纆耱茉莈莫蓦藦蛨蟔貃貊貘銆鏌镆陌靺驀魩默黙","kǒu":"劶口","wā":"劸嗗娲媧屲挖搲攨洼溛漥畖穵窊窪蛙鼃","kuāng":"劻匡匩哐恇框洭硄筐筺誆诓軭邼","gào":"勂吿告峼祮祰禞筶誥诰郜鋯锆","láng":"勆嫏廊斏桹榔欴狼琅瑯硠稂筤艆蓈蜋螂躴郎郒郞鋃鎯锒阆駺鿶","xūn":"勋勛勲勳嚑坃埙塤壎壦曛焄熏燻爋獯矄窨纁臐蔒薫薰蘍醺駨","měng":"勐懜懵猛獴瓾艋蜢蠓錳锰鯭","lēi":"勒","kài":"勓忾愒愾欬炌炏烗鎎","wěng":"勜塕奣嵡攚暡瞈聬蓊","qín":"勤嗪噙埁嫀庈慬懃懄捦擒斳檎溱澿珡琴琹瘽禽秦耹芩芹菦菳蚙螓蠄鈙鈫雂靲鬵鳹鵭","jiàng":"勥匞匠夅嵹弜弶彊摾櫤洚滰犟糡糨絳绛袶謽酱醤醬降","chāo":"勦弨怊抄欩焯訬超鈔钞","fān":"勫噃嬏帆幡忛憣旙旛番籓繙翻蕃藩轓颿飜鱕","juān":"勬姢娟捐涓焆瓹脧蠲裐鎸鐫镌鵑鹃","lǜ":"勴垏寽嵂律慮櫖氯滤濾爈率箻綠緑繂绿膟葎虑鑢","chè":"勶坼屮彻徹掣撤澈烢爡瞮硩聅迠頙","sháo":"勺柖玿芍苕韶","wén":"匁彣文炆玟珳瘒紋纹聞芠蚉蚊螡蟁閺閿闅闦闻阌雯馼駇魰鳼鴍鼤","cōng":"匆囪囱忩怱悤暰枞棇樅樬漗焧熜瑽璁瞛篵緫繱聡聦聪聰苁茐葱蓯蔥蟌鍯鏦騘驄骢","pēng":"匉嘭怦恲抨梈漰澎烹砰硑磞軯閛","táo":"匋咷啕桃梼檮洮淘祹綯绹萄蜪裪迯逃醄鋾錭陶鞀鞉饀駣騊鼗","běi":"北鉳","nǎo":"匘垴堖嫐恼悩惱獶獿瑙碯脑脳腦","fāng":"匚坊方枋汸淓牥芳蚄邡鈁錺钫鴋","zā":"匝咂帀拶沞紥紮臜臢迊鉔魳","zāng":"匨牂羘臧蔵賍賘贓贜赃髒","fěi":"匪奜悱斐朏棐榧篚翡胐蕜誹诽","kuì":"匮喟嘳媿嬇尯愦愧憒樻欳溃潰瞆篑簣籄聩聭聵腃蒉蕢謉鐀鑎餽饋馈","suǎn":"匴","kē":"匼嗑嵙搕柯棵榼樖牁犐珂疴瞌砢磕礚科稞窠胢苛萪薖蝌趷軻轲醘鈳钶顆颏颗髁","biǎn":"匾惼扁碥稨窆糄萹藊褊貶贬鴘","niàn":"卄唸埝姩廿念艌","sà":"卅摋櫒泧脎萨薩虄鈒钑隡颯飒馺","shēng":"升呏声斘昇曻枡栍殅泩湦焺牲狌珄生甥竔笙聲苼鉎鍟阩陞陹鵿鼪","huá":"华姡搳撶滑猾磆華蕐螖譁釪釫鋘鏵铧驊骅鷨","bēi":"卑悲揹杯桮椑盃碑藣陂鵯鹎","shuài":"卛帅帥蟀","bo":"卜萡","bǔ":"卟哺喸捕补補鵏鸔","lú":"卢嚧垆壚庐廬攎曥枦栌櫨泸瀘炉爐獹玈璷瓐盧矑籚纑罏胪臚舮舻艫芦蘆蠦轤轳鈩鑪顱颅髗魲鱸鲈鸕鸬黸","lǔ":"卤嚕塷掳擄擼樐橹櫓氌滷澛瀂硵磠艣艪蓾虏虜鏀鐪鑥镥魯鲁鹵","guà":"卦啩坬挂掛絓罣罫褂詿诖","áng":"卬岇昂昻","yìn":"印垽堷廕慭憖憗懚檼洕湚猌癊胤茚酳鮣","què":"却卻埆塙墧崅悫愨慤搉榷燩琷皵硞确碏確碻礐礭趞闋闕阕雀鵲鹊","luǎn":"卵","juǎn":"卷呟埍帣捲臇菤錈锩","tīng":"厅厛听庁廰廳桯汀烃烴町綎耓聴聼聽艼鞓","zhé":"厇哲啠喆嚞埑悊折摺晢晣歽矺砓磔籷粍虴蛰蟄袩詟謫謺讁讋谪輒輙轍辄辙銸馲鮿","yǎ":"厊哑唖啞庌痖瘂蕥雅","shè":"厍厙射弽慑慴懾摂摄摵攝欇歙涉涻渉滠灄社舎蔎蠂設设赦韘騇麝","dǐ":"厎呧坘底弤抵拞掋柢牴砥聜菧觝詆诋軧邸阺骶鯳","zhǎ":"厏拃搩眨砟苲踷鮓鮺鲊鲝","páng":"厐厖嫎庞彷徬旁舽螃逄鳑龎龐","zuī":"厜嗺朘樶纗蟕","áo":"厫嗷嗸嶅廒摮敖滶熬獒獓璈磝翱翶翺聱蔜螯謷謸遨鏖隞鰲鳌鷔鼇","róu":"厹媃揉柔渘煣瑈瓇禸粈糅腬葇蝚蹂輮鍒鞣騥鰇鶔","ěr":"厼尒尓尔栮毦洱爾珥耳薾趰迩邇铒餌饵駬","shuāng":"双孀孇欆礵艭雙霜騻驦骦鷞鸘鹴","shōu":"収收","guài":"叏夬怪恠","bá":"叐坺墢妭抜拔炦犮癹胈茇菝詙跋軷颰魃鼥","fā":"发彂沷発發醱","qǔ":"取娶竘竬蝺詓齲龋","dié":"叠喋垤堞峌嵽幉恎惵戜挕揲昳曡殜氎牃牒瓞畳疂疉疊眣碟絰绖耊耋胅臷艓苵蜨蝶褋詄諜谍趃蹀迭镻鰈鲽","ruì":"叡壡枘汭瑞睿芮蚋蜹銳鋭锐","jiào":"叫呌嘂嘦噍噭嬓峤嶠挍敎教斠滘漖潐獥珓皭窌窖藠覺訆譥趭較轎轿较酵醮釂","kě":"可坷岢嵑嶱敤渇渴炣","pǒ":"叵尀笸钷颇駊","liǎo":"叾憭曢爒瞭蓼鄝釕钌镽","hōng":"叿吽呍嚝揈渹灴烘焢硡薨訇谾軣輷轟轰鍧","xū":"吁嘘噓墟媭嬃幁戌揟旴晇楈欨歔湑疞盱窢縃繻胥蕦虗虚虛蝑裇訏諝譃谞鑐需須頊须顼驉鬚魆魖","máng":"吂哤娏尨庬忙恾杗杧氓汒浝牻狵痝盲硭笀芒茫蛖邙釯鋩铓駹","yāo":"吆喓夭妖幺枖楆殀祅腰葽訞邀鴁","zǐ":"吇呰啙姉姊杍梓榟橴滓矷秄秭笫籽紫耔胏虸訿釨","cùn":"吋寸籿","tǔ":"吐土圡釷钍","tūn":"吞呑啍噋旽暾朜涒焞黗","qìn":"吢吣唚抋揿搇撳沁瀙菣藽","fǒu":"否妚殕缶缹缻雬鴀","ba":"吧紦","dūn":"吨噸墩墪惇撉撴敦橔犜獤礅蜳蹲蹾驐","shǔn":"吮","wú":"吳吴吾呉唔娪无梧毋洖浯無珸璑祦禑芜茣莁蕪蜈蟱譕郚铻鯃鵐鷡鹀鼯","chǎo":"吵巐炒焣煼眧麨","nà":"吶呐妠娜捺笝納纳肭蒳衲袦豽貀軜那鈉钠靹魶","xuè":"吷坹桖瀥狘血謔谑趐","chuī":"吹炊龡","hǒu":"吼犼","méi":"呅坆堳塺娒媒嵋徾攗枚栂梅楣楳槑沒没湄湈煤猸玫珻瑂眉睂矀禖穈脄脢腜苺莓葿蘪郿酶鋂鎇镅霉鶥鹛黴","dāi":"呆呔懛獃","bei":"呗唄","guō":"呙咼啯嘓埚堝墎崞彉彍濄瘑蝈蟈郭鈛鍋锅","wen":"呚","qiāng":"呛嗆嗴嶈戕戗戧斨枪椌槍溬牄猐獇玱瑲篬羌羗羫腔蜣謒跄蹌蹡錆鎗鏘锖锵镪","shī":"呞失尸屍师師施浉湤湿溮溼濕狮獅瑡絁葹蒒蓍虱蝨褷襹詩诗邿釶鉇鉈鍦鯴鰤鲺鳲鳾鶳鸤","pěn":"呠翸","ne":"呢","ḿ":"呣","rán":"呥嘫然燃繎肰蚦蚺衻袇袡髥髯","tiè":"呫飻餮","qì":"呮咠唭噐器夡契弃忔憇憩摖暣栔棄欫气気氣汔汽泣湆湇炁甈盵矵砌碛碶磜磧磩罊芞葺蟿訖讫迄鼜","hē":"呵喝嗬抲欱蠚訶诃","náo":"呶夒峱嶩巎怓憹挠撓猱硇碙蛲蟯詉譊鐃铙","pēi":"呸怌柸肧胚衃醅","mìng":"命椧詺","pǒu":"咅哣婄犃","yāng":"咉央姎抰殃泱眏秧胦鉠雵鞅鴦鸯","zǎ":"咋","hāi":"咍嗨","dā":"咑嗒噠搭撘瘩笚耷荅褡鎝","kā":"咔咖喀擖衉","zuo":"咗","lóng":"咙嚨屸嶐巃巄昽曨朧栊槞櫳泷湰滝漋瀧爖珑瓏癃眬矓砻礱礲窿竜笼篭籠聋聾胧茏蕯蘢蠪蠬襱豅躘鏧鑨隆霳靇驡鸗龍龒龙","liě":"咧挘毟","mī":"咪眯瞇","zán":"咱","ké":"咳壳揢殼翗","huī":"咴噅噕婎媈幑徽恢拻挥揮撝晖暉楎洃瀈灰灳烣煇珲睳禈翚翬蘳虺袆褘詼诙豗輝辉隓隳鰴麾","huài":"咶坏壊壞蘾","xuǎn":"咺晅烜癣癬选選顈","āi":"哀哎唉嗳噯埃娭挨欸溾銰鎄锿","pǐn":"品榀","shěn":"哂婶嬸审宷審弞曋沈渖瀋瞫矤矧覾訠諗讅谂谉邥頣魫","hǒng":"哄嗊晎","wa":"哇瓲","hā":"哈铪","zāi":"哉栽渽溨災灾烖甾睵菑賳","diè":"哋眰","pài":"哌派渒湃蒎鎃","gén":"哏","nián":"哖年秊秥鮎鯰鲇鲶鵇黏","huā":"哗嘩埖婲椛硴糀花芲蒊蘤誮錵","xing":"哘裄","mōu":"哞","yō":"哟唷喲","lòng":"哢徿梇贚","ó":"哦","lī":"哩","gěng":"哽埂峺挭梗綆绠耿莄郠骾鯁鲠","shuō":"哾說説说","gě":"哿嗰舸","chún":"唇浱淳湻滣漘犉純纯脣莼蒓蓴醇醕錞陙鯙鶉鹑","jiá":"唊圿忦恝戛戞扴荚莢蛱蛺袷裌跲郏郟鋏铗頬頰颊餄鴶鵊","zào":"唕唣喿噪慥梍灶煰燥皁皂竃竈簉艁譟趮躁造","dí":"唙嘀嚁嫡廸敌敵梑樀涤滌狄笛篴籴糴翟苖荻蔋蔐藡覿觌豴蹢迪鏑靮頔馰髢鬄鸐","huàn":"唤喚喛奂奐宦嵈幻患愌换換擐梙槵浣涣渙漶澣烉焕煥瑍痪瘓睆肒藧豢逭鯇鯶鰀鲩","lang":"唥","fěng":"唪覂諷讽","wéi":"唯喡囗围圍圩媁峗峞嵬帏帷幃惟桅欈沩洈涠湋溈潍潙潿濰犩琟癓硙磑維维蓶覹违違鄬醀鍏闈闱霺韋韦鮠","qiàng":"唴炝熗羻","yū":"唹扜淤瘀盓穻箊紆纡虶込迂迃陓","lài":"唻櫴濑瀨瀬癞癩睐睞籁籟藾襰賚賴赉赖頼顂鵣","tuò":"唾拓柝毤毻箨籜萚蘀跅鿳鿸","nǒu":"啂","kěn":"啃垦墾恳懇肎肯肻豤錹齦龈","a":"啊","wèn":"問妏揾搵汶渂璺莬问顐","chuài":"啜嘬膪踹","fēi":"啡妃婓婔扉暃渄猆緋绯菲蜚裶霏非靟飛飝飞餥馡騑騛鲱","pí":"啤埤壀岯崥朇枇毗毘毞焷狓琵疲皮篺罴羆肶脾腗膍芘蚍蚽蚾蜱螷蠯豼貔郫阰陴魮鲏鵧鼙","shá":"啥","la":"啦鞡","pā":"啪妑皅舥葩趴","sè":"啬嗇懎擌栜歮歰洓涩渋澀澁濇濏瀒琗瑟璱瘷穑穡穯繬色譅轖銫鏼铯雭飋","niè":"啮喦嗫噛嚙囁囓圼孼孽嵲嶭巕帇惗摰敜枿槷櫱涅湼痆篞籋糱糵聂聶臬臲菍蘖蠥讘踂踗踙蹑躡錜鎳鑈鑷钀镊镍闑陧隉顳颞齧","luō":"啰囉頱","dìng":"啶定忊椗矴碇碠磸聢腚萣蝊訂订鋌錠铤锭顁飣饤","lāng":"啷","yóng":"喁揘顒颙鰫","lǎ":"喇藞","jiē":"喈喼嗟堦媘嫅接掲揭擑椄湝煯疖痎癤皆秸稭脻菨蝔街謯阶階鞂鶛","wāi":"喎歪竵","nuò":"喏愞懦懧掿搦搻榒稬穤糑糥糯諾诺蹃逽锘","ō":"喔噢","hú":"喖嘝囫壶壷壺媩弧抇搰斛楜槲湖瀫焀煳狐猢瑚瓳箶糊絗縠胡葫蔛蝴螜衚觳醐鍸隺頶餬鬍魱鰗鵠鶘鶦鹕","xǐ":"喜囍壐屣徙憘暿枲橲歖洗漇玺璽矖禧縰葈葸蓰蟢諰謑蹝躧鈢鉨鉩铣鱚","pèn":"喯","miāo":"喵","pēn":"喷噴歕","kuí":"喹夔奎巙戣揆晆暌楏楑櫆犪睽葵藈蘷虁蝰躨逵鄈鍨鍷隗頄頯馗騤骙魁","á":"嗄","xiù":"嗅岫峀溴珛琇璓秀繍繡绣螑袖褎褏銹鏥鏽锈齅","sǎng":"嗓搡磉褬鎟顙颡","chēn":"嗔抻捵琛瞋綝縝諃謓賝郴","pǎng":"嗙耪覫","lào":"嗠嫪憦橯涝澇烙耢耮躼軂酪","wēng":"嗡滃翁螉鎓鶲鹟","wà":"嗢聉腽膃袜襪韈韤","suo":"嗦","嗧":"嗧","ń":"嗯","ná":"嗱拏拿挐鎿镎","diē":"嗲爹褺跌","tōng":"嗵囲樋炵痌蓪通","zhē":"嗻嫬蜇遮","sòu":"嗽瘶","tǎn":"嗿坦忐憳憻暺毯璮菼袒襢醓鉭钽","cáo":"嘈嶆曹曺槽漕艚蓸螬褿鏪","pó":"嘙婆櫇皤蔢謈鄱","dē":"嘚","lei":"嘞","sāi":"嘥噻塞愢揌毢毸腮顋鰓鳃","cháo":"嘲巢巣晁朝樔漅潮牊窲罺謿轈鄛鼂鼌","zuǐ":"嘴噿嶊嶵璻","hēi":"嘿潶黑黒","ě":"噁枙砈頋騀鵈","chuáng":"噇幢床牀","cēng":"噌曽","dēng":"噔嬁灯燈璒登竳簦艠覴豋蹬","juē":"噘屩撅撧蹻","lū":"噜撸謢","yìng":"噟媵映暎硬膡鞕鱦","zhān":"噡嶦惉旃旜枬栴毡氈氊沾瞻粘薝蛅詀詹譫谵趈邅閚霑飦饘驙魙鱣鳣鸇鹯龪","yuě":"噦","gá":"噶尜釓錷钆","hm":"噷","dāng":"噹当澢珰璫當筜簹艡蟷裆襠鐺铛","làn":"嚂滥濫烂燗爁爛爤瓓糷鑭","hāo":"嚆茠蒿薅薧","mē":"嚒","cā":"嚓擦攃","hai":"嚡","pín":"嚬娦嫔嬪玭琕矉薲蠙貧贫頻顰频颦","rǎng":"嚷壌壤攘爙纕","tà":"嚺崉挞搨撻榻橽毾涾澾濌狧禢誻譶踏蹋躢遝遢錔闒闥闼鞜鞳鮙","chuò":"嚽娕娖婥婼惙擉歠涰磭綽繛绰腏趠輟辍辵辶酫鑡齪龊","huān":"嚾懽欢歓歡犿獾讙貛酄驩鴅鵍","cà":"囃遪","chài":"囆瘥虿蠆袃訍","sū":"囌櫯甦稣穌窣苏蘇蘓酥鯂","zen":"囎","nāng":"囔","lǎn":"囕壈嬾孄孏懒懶揽擥攬榄欖浨漤灠爦纜缆罱覧覽览醂顲","lo":"囖","nín":"囜您","nān":"囡","guó":"囯囶囻国圀國帼幗慖漍聝腘膕蔮虢馘","kùn":"困涃睏","qūn":"囷夋峮逡","rì":"囸日釰鈤馹驲","tāi":"囼孡胎","pǔ":"圃圑埔普暜朴樸檏氆浦溥烳諩譜谱蹼鐠镨","quān":"圈圏奍峑弮恮悛棬鐉駩","lüè":"圙掠擽略畧稤鋝鋢锊","huán":"圜嬛寏寰峘桓洹澴狟环環瓛糫絙綄繯缳羦荁萈萑豲貆轘郇鉮鍰鐶锾镮闤阛雈鬟鹮","luán":"圝圞奱娈孌孪孿峦巒挛攣曫栾欒滦灓灤癴癵羉脔臠虊銮鑾鵉鸞鸾龻","bǎn":"坂岅昄板版瓪粄舨蝂鈑钣闆阪魬","qǐn":"坅寑寝寢昑梫笉螼赾鋟锓","tún":"坉屯忳臀臋芚豘豚軘霕飩饨魨鲀","tān":"坍怹摊擹攤滩灘痑瘫癱舑貪贪","bà":"坝垻壩弝欛灞爸矲罢罷耙覇跁霸鮊鲅鲌","fén":"坟墳妢岎幩朌枌梤棼橨汾濆炃焚燌燓羒羵肦蒶蕡蚠蚡豮豶轒鐼隫馚馩魵黂鼖鼢","zhuì":"坠墜娷惴桘甀畷硾礈笍綴縋缀缒膇諈贅赘轛醊錣鑆餟","pō":"坡岥泊泼溌潑鉕鏺钋頗","kūn":"坤堃堒婫崐崑昆晜潉焜熴猑琨瑻菎蜫裈裩褌貇醌錕锟騉髠髡髨鯤鲲鵾鶤鹍","chí":"坻墀岻弛持歭池漦竾筂箎篪茌荎蚳謘貾赿趍踟迟遅遟遲馳驰","lā":"垃拉搚柆翋菈邋","min":"垊","cí":"垐堲嬨慈柌濨珁瓷甆磁礠祠糍茈茨薋詞词辝辞辤辭雌飺餈鴜鶿鷀鹚","duī":"垖堆塠嵟痽磓鐜鴭","chá":"垞察嵖搽查槎檫猹碴秅茬茶詧靫","shǎng":"垧扄晌賞贘赏鑜","shǒu":"垨守手艏首龵","da":"垯墶繨","háng":"垳斻杭珩笐筕絎绗航苀蚢貥迒頏颃魧","bāng":"垹帮幇幚幫捠梆浜縍邦邫鞤","běng":"埄埲琣琫繃菶鞛","fáng":"埅妨房肪防魴鰟鲂","mái":"埋薶霾","làng":"埌崀浪莨蒗閬鿾","lǔn":"埨碖稐耣","chǒng":"埫宠寵","cài":"埰棌縩菜蔡","péi":"培毰裴裵賠赔锫阫陪駍","sào":"埽氉瘙矂髞","fang":"堏","àn":"堓婩岸按晻暗案洝犴胺荌豻貋錌闇鮟黯鿷","hún":"堚忶梡浑渾琿繉轋餛馄魂鼲","ruán":"堧壖撋","gèng":"堩暅更","dǔ":"堵帾琽睹笃篤覩賭赌","hèng":"堼","chūn":"堾媋旾春暙杶椿槆橁櫄瑃箺萅蝽輴鰆鶞","huāng":"塃巟慌朚肓荒衁","léng":"塄崚棱楞碐稜薐輘","duàn":"塅断斷椴段毈煅瑖碫簖籪緞缎腶葮躖鍛锻","tǎ":"塔墖溚獭獺鰨鳎鿎","zàng":"塟奘弉脏臓臟葬銺","tián":"塡填屇恬搷沺湉璳甛甜田畋畑畠盷碵磌窴緂胋菾鈿闐阗鴫鷆鷏鿬","zhèng":"塣幀政正症証諍證证诤郑鄭鴊","wēn":"塭昷榅榲殟温溫瑥瘟蕰豱輼轀辒鎾鞰饂鰛鰮鳁","hǎi":"塰海烸胲酼醢","lǎng":"塱朖朗朤樃烺蓢誏","bèng":"塴泵甏蹦迸逬鏰镚","chén":"塵宸尘忱愖揨敐晨曟樄沉煁瘎臣茞莀莐蔯薼螴訦諶谌軙辰迧鈂陈陳霃鷐麎","ōu":"塸櫙欧歐殴毆沤漚熰瓯甌筽膒藲謳讴鏂鴎鷗鸥","shuǎng":"塽慡樉漺爽縔鏯","shú":"塾婌孰熟璹秫贖赎","lǒu":"塿嵝嶁搂摟甊篓簍","màn":"墁幔慢摱曼槾漫澷熳獌縵缦蔄蔓蘰鄤鏝镘","kàn":"墈崁看瞰矙磡衎闞","chěn":"墋夦硶碜磣贂趻踸醦鍖","qiǎng":"墏抢搶繈繦羟羥襁鏹","zēng":"増增憎橧熷璔矰磳繒缯罾譄鄫鱛","dǒng":"墥嬞懂箽董蕫諌","zūn":"墫壿尊嶟樽繜罇遵鐏鱒鳟鶎鷷","mú":"墲毪氁","dǎo":"壔导導岛島嶋嶌嶹捣搗擣槝祷禂禱蹈陦隝隯","san":"壭橵","zhuàng":"壮壯壵戇撞漴焋状狀","kǔn":"壸壼悃捆梱硱祵稇稛綑裍閫閸阃","mǎng":"壾漭硥茻莽莾蟒蠎","zhāi":"夈捚摘斋斎榸粂齋","xiòng":"夐敻焸詗诇","wài":"外夞顡","mèng":"夢夣孟梦霥","hāng":"夯","gǎo":"夰搞暠杲槀槁檺稁稾稿縞缟菒藁藳镐","tāo":"夲嫍幍弢慆掏搯槄涛滔濤瑫絛縚縧绦詜謟轁鞱韜韬飸饕","kuā":"夸姱舿誇","ēn":"奀恩煾蒽","pào":"奅泡炮疱皰砲礟礮麭","nài":"奈柰渿耏耐萘螚褦錼鼐","zòu":"奏揍楱","kāi":"奒开揩鐦锎開","bēn":"奔栟泍犇贲錛锛","tào":"套","běn":"奙本楍畚翉苯","shē":"奢檨猞畬畲賒賖赊輋","hǎ":"奤","yūn":"奫晕暈氲氳煴缊蒀蒕蝹贇赟頵馧","nǚ":"女籹釹钕","nú":"奴孥笯駑驽","dǐng":"奵嵿濎薡鐤頂顶鼎鼑","nuán":"奻","hǎo":"好郝","fàn":"奿婏嬎梵氾汎泛滼犯畈盕笵範范訉販贩軓軬飯飰饭","shuò":"妁搠朔槊欶烁爍獡矟硕碩箾蒴鎙鑠铄","wàng":"妄忘旺望朢盳迋","zhuāng":"妆妝娤庄庒桩梉樁湷粧糚荘莊装裝","mā":"妈媽嬤嬷孖","dù":"妒妬度杜殬渡秺肚芏荰螙蠧蠹鍍镀靯","miào":"妙庙庿廟玅竗","niū":"妞","tuǒ":"妥媠嫷庹彵椭楕橢鬌鰖鵎","nī":"妮","zhóu":"妯軸轴","tǒu":"妵敨紏蘣钭飳黈","ē":"妸妿娿婀屙痾","mèi":"妹媚寐抺旀昧沬煝痗眛睸祙篃蝞袂跊韎鬽魅","mín":"姄岷崏忞怋捪旻旼民珉琘琝瑉痻盿砇碈緍緡缗罠苠鈱錉鍲鴖","jiě":"姐媎檞毑解觧飷","pīn":"姘拼礗穦馪驞","héng":"姮恆恒桁横橫烆胻蘅衡鑅鴴鵆鸻","wá":"娃","ráo":"娆嬈桡橈荛蕘襓饒饶","niáng":"娘嬢孃","něi":"娞脮腇餒馁鮾鯘","ǎi":"娾昹毐濭矮蔼藹譪躷霭靄","mián":"婂媔嬵宀杣棉檰櫋眠矈矊矏綿緜绵臱芇蝒","biǎo":"婊檦表裱褾諘錶","wǒ":"婐我捰","ruí":"婑桵甤緌蕤","hūn":"婚惛昏昬棔殙涽睧睯荤葷閽阍","chōu":"婤抽搊犨犫瘳篘","nàn":"婻","miáo":"媌嫹描瞄緢苗鱙鶓鹋","ǎo":"媪媼抝拗芺袄襖镺","róng":"媶嫆嬫容峵嵘嵤嶸巆戎搈搑曧栄榕榮榵毧溶瀜烿熔爃狨瑢穁絨縙绒羢肜茙荣蓉蝾融螎蠑褣鎔镕駥髶","pán":"媻幋搫槃洀瀊爿盘盤磐磻縏蒰蟠跘蹒蹣鎜鞶","sǎo":"嫂扫掃","niǎo":"嫋嬝嬲樢茑蔦袅裊褭鳥鸟","báo":"嫑窇薄雹","piáo":"嫖瓢薸闝","xuán":"嫙悬懸旋暶檈漩玄玹琁璇璿痃蜁","mān":"嫚颟","kāng":"嫝嵻康忼慷槺漮砊穅粇糠躿鏮闶鱇","nèn":"嫩嫰恁","piè":"嫳","zhǎn":"嫸展崭嶃嶄搌斩斬榐橏琖盏盞輾醆颭飐黵","liǎn":"嬚摙敛斂琏璉羷脸臉蔹蘝蘞裣襝鄻","tiǎo":"嬥宨斢晀朓窕窱脁誂","bí":"嬶荸鼻","liǔ":"嬼柳栁桞桺橮熮珋綹绺罶羀鋶锍","zi":"子","kǒng":"孔恐","sūn":"孙孫搎槂狲猻荪蓀蕵薞飧飱","zhuǎn":"孨竱転轉转","hái":"孩还還頦骸","nāo":"孬","bò":"孹檗糪蘗譒","nái":"孻摨熋腉","zhái":"宅檡","sòng":"宋訟誦讼诵送鎹頌颂餸","ròu":"宍肉","zhūn":"宒窀肫衠諄谆迍","qún":"宭帬羣群裙裠","kuān":"宽寛寬臗鑧髋髖","xiǎo":"小晓暁曉皛皢筱筿篠謏","shǎo":"少","gǎ":"尕玍","liào":"尞尥尦廖撂料炓窷镣","kun":"尡","wāng":"尣尩尪尫汪","gà":"尬魀","tuí":"尵弚穨蘈蹪隤頹頺頽颓魋","kāo":"尻髛","niào":"尿脲","céng":"层層嶒曾竲驓","diǎo":"屌扚","zhěn":"屒弫抮昣枕畛疹眕稹紾縥缜聄萙袗裖診诊軫轸駗鬒黰","mǎn":"屘満满滿睌矕螨蟎襔鏋","lòu":"屚漏瘘瘺瘻鏤镂陋","shǔ":"属屬暏暑曙潻癙糬署薥薯藷蜀蠴襡襩鱪鱰黍鼠鼡","cén":"岑梣涔笒","gǎng":"岗崗港","gǒu":"岣枸狗玽笱耇耈耉芶苟蚼豿","tiáo":"岧岹条條樤祒笤芀萔蓚蓨蜩趒迢鋚鎥鞗髫鯈鰷鲦齠龆","lǐng":"岭嶺袊阾領领","pò":"岶敀昢洦烞珀破砶粕蒪迫酦醗釙魄","luò":"峈摞泺洛洜漯濼犖珞硦笿絡纙络荦落雒駱骆鮥鴼鵅","ěn":"峎","qiǎ":"峠跒酠鞐","bū":"峬庯晡誧逋鈽钸","chóng":"崇崈爞緟虫蝩蟲褈隀","xiáo":"崤殽洨淆筊訤誵郩","wǎi":"崴","cuó":"嵯嵳痤睉矬蒫蔖虘躦酂鹺鹾","cēn":"嵾","ru":"嶿","yǐng":"巊廮影摬梬浧潁瘿癭矨穎郢鐛頴颍颕颖","cuán":"巑櫕欑穳","qiǎo":"巧愀釥髜","gǒng":"巩廾拱拲栱汞珙輁鞏","pu":"巬巭","pà":"帊帕怕袙","tiē":"帖怗聑萜貼贴","zhǒu":"帚晭疛睭箒肘菷鯞","shuì":"帨涗涚睡祱稅税裞","chān":"幨搀攙梴裧襜覘觇辿鉆鋓","miè":"幭懱搣櫗滅灭烕篾蔑薎蠛衊覕鑖鱴鴓","guǎng":"广広廣犷獷臩","bài":"庍拜拝敗猈稗粺薭贁败韛","qǐng":"庼廎檾漀苘請謦请頃顷","kuò":"廓懖扩拡括挄擴桰濶筈萿葀蛞闊阔霩鞟鞹韕頢髺鬠","pǎi":"廹","nòng":"弄挊挵癑齈","shāo":"弰捎旓梢烧焼燒稍筲艄莦蕱蛸輎颵髾鮹","biè":"彆","tuàn":"彖湪褖","yuē":"彟彠曰曱矱箹約约","wǎng":"往徃徍惘暀枉棢瀇網网罒罔菵蛧蝄誷輞辋魍龬","cú":"徂殂","huái":"徊怀懐懷槐櫰淮瀤耲蘹褢褱踝","zhi":"徔","de":"得的脦","dé":"徳德恴悳惪棏淂鍀锝","xin":"忄","gǎi":"忋改絠","rěn":"忍栠栣棯秹稔綛荏荵躵","chàn":"忏懴懺摲硟羼韂顫颤","tè":"忑忒慝特螣蟘貣鋱铽","niǔ":"忸扭炄狃紐纽莥鈕钮靵","kuáng":"忹抂狂狅誑诳軖軠鵟","òu":"怄慪","zěn":"怎","yàng":"怏恙样様樣漾瀁羕詇","xuàn":"怰昡楥楦泫渲炫琄眩眴碹絢縼繏绚蔙衒袨讂贙鉉鏇铉镟鞙颴","mo":"怽","nǜ":"恧朒沑衂衄","hèn":"恨","xiao":"恷","tòng":"恸慟憅痛衕","huǐ":"悔檓毀毁毇燬譭","mèn":"悶懑懣暪焖燜闷","guǒ":"惈果椁槨淉猓粿綶菓蜾裹褁輠錁鐹餜馃","cǎn":"惨慘憯朁穇篸黪黲","cán":"惭慙慚残殘蚕蝅蠶蠺","rě":"惹","huàng":"愰曂榥滉皝皩鎤","zhěng":"愸抍拯掟撜整晸氶糽","cǎo":"愺懆艸艹草騲","sāo":"慅掻搔溞繅缫臊螦騒騷骚鰠鱢鳋","gong":"慐","còng":"憁謥","biē":"憋虌蟞鱉鳖鼈龞","shéng":"憴縄繩绳譝","mǒ":"懡抹","hui":"懳","ràng":"懹譲讓让","nǎn":"戁揇湳煵腩萳蝻赧","gàng":"戅戆槓焵焹筻鿍","zéi":"戝蠈賊贼鯽鰂鱡鲗","děng":"戥朩等","chuō":"戳踔逴","shou":"扌","cái":"才材纔裁財财","dǎ":"打","rēng":"扔","káng":"扛摃","dèn":"扥扽","mén":"扪捫玧璊菛虋鍆钔門閅门","rǎo":"扰擾隢","bān":"扳搬攽斑斒班瘢癍般螌褩辬頒颁鳻","zhǎo":"找沼爪爫瑵","bǎ":"把鈀钯靶","nè":"抐疒眲訥讷","zhuā":"抓檛簻膼髽","póu":"抔抙捊掊箁裒錇","pāo":"抛拋脬萢","lūn":"抡掄","yun":"抣繧","chāi":"拆芆釵钗","niān":"拈蔫","pāi":"拍","līn":"拎","guǎi":"拐枴柺箉","qiá":"拤","hén":"拫痕鞎","nǐn":"拰","shuān":"拴栓閂闩","zhuāi":"拽","bāi":"挀掰擘","kuà":"挎胯跨骻","ruá":"挼","tǒng":"捅桶筒統綂统","niē":"捏揑","yé":"捓揶擨爷爺耶釾鋣鎁铘","zùn":"捘銌","lāo":"捞撈粩","sǔn":"损損榫笋筍箰簨鎨隼鶽","shě":"捨舍","dáo":"捯","niǎn":"捻撚撵攆涊淰焾碾簐跈蹍蹨躎輦辇辗","ruó":"捼","zuó":"捽昨椊琢秨稓筰莋鈼","qiā":"掐葜","kòng":"控鞚","tuī":"推蓷藬","tiàn":"掭睼舚","kèn":"掯裉褃","pá":"掱杷潖爬琶筢","ming":"掵","meng":"掹","pèng":"掽椪碰踫","biān":"揙煸牑猵獱甂砭笾箯籩編编蝙边辺邉邊鍽鞭鯾鯿鳊","chuāi":"揣搋","là":"揧攋楋溂爉瓎瘌腊臈臘蜡蝋蝲蠟辢辣鑞镴鬎鯻","chòng":"揰銃铳","beng":"揼","cuō":"搓撮瑳磋蹉遳醝","qiǔ":"搝糗","èn":"摁","bìn":"摈擯殡殯膑臏髌髕髩鬂鬓鬢","shuāi":"摔衰","tàng":"摥烫燙趟","mō":"摸","piē":"撆撇暼氕瞥","hòng":"撔澋澒訌讧銾閧闀闂鬨","cāo":"撡操糙","liāo":"撩蹽","cuān":"撺攛汆蹿躥鋑鑹镩","nǎng":"擃攮曩灢","kuǎi":"擓蒯","mēng":"擝","xǐng":"擤睲醒","pān":"攀潘畨眅萠","lèi":"攂泪洡涙淚禷类累纇蘱酹銇錑頛頪類颣","huǎn":"攌緩缓","zuàn":"攥鑚","fàng":"放趽","dòu":"斗斣梪毭浢痘窦竇脰荳豆逗郖酘閗闘餖饾鬥鬦鬪鬬鬭","zǎo":"早枣栆棗澡璪繰薻藻蚤","shài":"晒曬閷","zuì":"晬最栬槜檇檌祽稡絊罪蕞辠酔酻醉鋷錊","shǎn":"晱炶煔熌睒覢閃闪陕陝鿃","zàn":"暂暫濽灒瓉瓒瓚禶襸讃讚賛贊赞蹔鄼酇錾鏨饡","nuǎn":"暖渜煖煗餪","yào":"曜熎燿獟矅穾窔筄纅耀艞药葯薬藥袎要覞詏讑鑰钥靿鷂鹞鼼","pù":"曝瀑舖舗鋪铺","zhá":"札煠牐甴箚耫蚻譗鍘铡閘闸","xiǔ":"朽滫潃糔綇","cūn":"村澊皴竴膥踆邨","miǎo":"杪淼渺眇秒篎緲缈藐邈","àng":"枊盎醠","xín":"枔襑鐔","mǒu":"某","zhè":"柘樜浙淛潪蔗蟅这這鷓鹧","gēn":"根跟","sāng":"桑桒槡","桛":"桛","po":"桲","gùn":"棍璭睔睴謴","sēn":"森椮槮襂","zōu":"棷棸箃緅菆諏诹邹郰鄒鄹陬騶驺鯫鲰黀齱齺","mēn":"椚","quan":"椦","pián":"楄楩胼腁諚谝賆跰蹁駢騈骈骿","rǒu":"楺韖","lǘ":"榈櫚氀膢藘閭闾馿驢驴鷜","chu":"榋橻","bǎng":"榜牓綁绑膀髈","nòu":"槈檽獳耨譳鎒鐞","gāo":"槔槹橰櫜滜皋皐睾篙糕羔羙膏臯韟餻高髙鷎鷱鼛","xuě":"樰膤艝轌雪鱈鳕","rùn":"橍润潤膶閏閠闰","shùn":"橓瞚瞬舜蕣順顺鬊","nuǒ":"橠","nǐng":"橣矃","ruǐ":"橤繠蕊蕋蘂蘃","jian":"橺","jiao":"櫵鵤","cáng":"欌藏鑶","guang":"欟","kuǎn":"欵款歀窽窾","chuā":"欻歘","sǐ":"死","piǎo":"殍皫瞟篻縹醥顠","chòu":"殠臭臰遚","cuàn":"殩熶爨窜竄篡簒","lu":"氇","bin":"氞","shuǐ":"水氺","shui":"氵閖","tǔn":"氽畽","pìn":"汖牝聘","tu":"汢","quǎn":"汱烇犬犭畎綣绻虇","niú":"汼牛牜","hàng":"沆","zhuǐ":"沝","sǎ":"洒潵灑訯躠靸","shuàn":"涮腨","nào":"淖臑閙闹鬧","féi":"淝肥腓蜰蟦","tuān":"湍煓猯貒","pén":"湓瓫盆葐","liū":"溜熘蹓","lùn":"溣論论","mǎ":"溤玛瑪码碼蚂螞遤鎷馬马鰢鷌","suò":"溹蜶逤","cuǐ":"漼璀皠趡","zong":"潈","yu":"澚","suǐ":"瀡膸髄髓","ling":"瀮","shuàng":"灀","pàng":"炐肨胖","bian":"炞","烪":"烪","rè":"热熱","xiǒng":"焽","wei":"煀","kuǐ":"煃跬蹞頍","liang":"煷","xióng":"熊雄","tēng":"熥膯鼟","jing":"燝","ju":"爠","piàn":"片騗騙骗魸","māng":"牤","kào":"犒銬铐靠鮳鯌鲓","má":"犘痲蔴蟆蟇麻","kǔ":"狜苦","suān":"狻痠酸","māo":"猫貓","fà":"珐琺蕟髪髮","guǎn":"琯痯筦管舘莞輨錧館馆鳤","suí":"瓍绥遀隋随隨","瓧":"瓧","wèng":"瓮甕罋蕹齆","瓰":"瓰","瓱":"瓱","瓼":"瓼","甅":"甅","zèng":"甑贈赠鋥锃","yòng":"用砽苚醟","shuǎi":"甩","béng":"甭","tuǎn":"疃","nüè":"疟瘧硸虐","biě":"瘪癟","qué":"瘸","bái":"白","qié":"癿聺","yuǎn":"盶远逺遠鋺","dǔn":"盹趸躉","tiào":"眺粜糶絩覜跳","zhe":"着著","lōu":"瞜","rún":"瞤","duǎn":"短","qing":"硘","cǎ":"礤礸","suàn":"祘笇筭算蒜","zū":"租葅蒩","chèng":"秤","zhùn":"稕訰","rong":"穃","zui":"穝","zhǎi":"窄鉙","zhuo":"窧","shāi":"筛篩簁簛酾釃","bǒ":"箥簸跛","qi":"簯緕缼","qian":"籖鎆鏲","zuǎn":"籫繤纂纉纘缵","fěn":"粉黺","yin":"粌","tai":"粏","cū":"粗觕麁麄麤","miàn":"糆面靣麪麫麵麺","fóu":"紑裦","gěi":"給给","tòu":"綉透","sha":"繌","rào":"繞绕遶","nǒng":"繷","shǎi":"繺","quē":"缺蒛阙","zhao":"罀","yang":"羪","nóu":"羺","shuǎ":"耍","lē":"肋","cào":"肏襙鄵","āng":"肮骯","néng":"能","nin":"脌","cuǒ":"脞","shuí":"脽誰谁","chuái":"膗","gěn":"艮","qiōng":"芎","rèng":"芿","qiē":"苆","xiú":"苬","nié":"苶","chǎi":"茝","rōng":"茸","you":"蒏","zí":"蓻","xu":"蓿","há":"蛤","ban":"螁","tiao":"螩","chang":"蟐","chǎ":"衩蹅鑔镲","shang":"裳","fiào":"覅","piǎn":"覑諞貵","tǎo":"討讨","éi":"誒诶","shuà":"誜","miù":"謬谬","zèn":"譖譛谮","zhán":"讝","càng":"賶","zǒu":"走赱鯐龰","pǎo":"跑","zhuǎi":"跩","cèng":"蹭","tá":"蹹","zuān":"躜鑽钻","bú":"轐醭鳪","guò":"过過","qu":"迲","zhuī":"追錐锥隹騅骓鵻","fu":"酜","niàng":"酿醸釀","ā":"錒锕阿","wu":"錻","zhang":"鏱","xian":"鑦","xiǎ":"閜","sē":"閪","tèng":"霯","ēng":"鞥","duǐ":"頧","zǎng":"駔驵","dai":"鮘","gú":"鶻","chi":"麶","nún":"黁","hōu":"齁","óu":"齵","龦":"龦","龧":"龧","龨":"龨","龩":"龩","龫":"龫","龭":"龭","龮":"龮","龯":"龯","龱":"龱","龲":"龲","龳":"龳","龴":"龴","龶":"龶","龷":"龷","龸":"龸","龹":"龹","龺":"龺","龼":"龼","龽":"龽","龾":"龾","龿":"龿","鿀":"鿀","鿁":"鿁","鿂":"鿂","鿅":"鿅","鿆":"鿆","鿈":"鿈","鿉":"鿉","鿊":"鿊","鿋":"鿋","鿐":"鿐","鿑":"鿑","鿒":"鿒","鿓":"鿓","鿖":"鿖","鿗":"鿗","鿘":"鿘","鿙":"鿙","鿚":"鿚","鿛":"鿛","鿜":"鿜","鿝":"鿝","鿞":"鿞","鿟":"鿟","鿠":"鿠","鿡":"鿡","鿢":"鿢","鿣":"鿣","鿤":"鿤","鿥":"鿥","鿦":"鿦","鿧":"鿧","鿨":"鿨","鿩":"鿩","鿪":"鿪","鿮":"鿮","鿯":"鿯","鿽":"鿽"},"w":{"宿舍":"sù shè","便宜":"pián yí","舍休":"shè xiū","較便":"jiào pián","照片":"zhào piān","片要":"piān yào","換便":"huàn pián","假去":"jià qù","寒假":"hán jià","角色":"jué sè","舍十":"shè shí","舍很":"shè hěn","舍安":"shè ān","睡覺":"shuì jiào","覺得":"jué de","片用":"piān yòng","一定":"yí dìng","前一":"qián yí","不到":"bú dào","存不":"cún bú","片或":"piān huò","一起":"yì qǐ","要一":"yào yì","舍比":"shè bǐ","部分":"bù fèn","舍不":"shè bù","舍到":"shè dào","不要":"bú yào","舍晚":"shè wǎn","假沒":"jià méi","暑假":"shǔ jià","重來":"chóng lái","重抽":"chóng chōu","來得及":"lái de jí","暈車":"yūn chē","一個":"yí ge","一次":"yí cì","一下":"yí xià","一天":"yì tiān","一共":"yí gòng","一點":"yì diǎn","一週":"yì zhōu","一個月":"yí ge yuè","大寮":"dà liáo","鳳山":"fèng shān","大發":"dà fā","還要":"hái yào","還沒":"hái méi","還有":"hái yǒu","還是":"hái shì","還剩":"hái shèng","還可以":"hái kě yǐ","為什麼":"wèi shén me","因為":"yīn wèi","比較":"bǐ jiào","地方":"dì fāng","只有":"zhǐ yǒu","不是":"bú shì","不會":"bú huì","不用":"bú yòng","不夠":"bú gòu","不太":"bú tài","不能":"bù néng","不一定":"bù yí dìng","打工":"dǎ gōng","工讀":"gōng dú","時薪":"shí xīn","月薪":"yuè xīn","薪水":"xīn shuǐ","排班":"pái bān","班表":"bān biǎo","大夜班":"dà yè bān","晚班":"wǎn bān","早班":"zǎo bān","白班":"bái bān","上班":"shàng bān","下班":"xià bān","同意書":"tóng yì shū","工作證":"gōng zuò zhèng","員工":"yuán gōng","結帳":"jié zhàng","補貨":"bǔ huò","內場":"nèi chǎng","理貨":"lǐ huò","家教":"jiā jiào","手搖飲":"shǒu yáo yǐn","門禁":"mén jìn","存錢":"cún qián","寄錢":"jì qián","月租":"yuè zū","收支":"shōu zhī","支出":"zhī chū","收入":"shōu rù","目的地":"mù dì dì","的地":"de dì","行程":"xíng chéng","銀行":"yín háng","行李":"xíng lǐ","重物":"zhòng wù","重要":"zhòng yào","倉庫":"cāng kù","筆電":"bǐ diàn","手機":"shǒu jī","預備金":"yù bèi jīn","念書":"niàn shū","唸書":"niàn shū","籃球":"lán qiú","舒服":"shū fú","應該":"yīng gāi","差不多":"chà bù duō","好好":"hǎo hǎo","得到":"dé dào","覺得累":"jué de lèi","睡飽":"shuì bǎo"}};
+(function(){
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+/* ---------- pinyin engine ---------- */
+const PYC={};const PYW=PYDATA?PYDATA.w:{};
+if(PYDATA){for(const k in PYDATA.c){for(const ch of PYDATA.c[k])PYC[ch]=k}}
+const CJK=/[㐀-鿿]/;
+function tokens(s){const out=[];const a=[...s];let i=0;
+  while(i<a.length){let done=false;
+    for(const L of [3,2]){const k=a.slice(i,i+L).join('');if(k.length===L&&PYW[k]){const ps=PYW[k].split(' ');for(let j=0;j<L;j++)out.push([a[i+j],ps[j]]);i+=L;done=true;break}}
+    if(done)continue;out.push([a[i],CJK.test(a[i])?PYC[a[i]]||'':null]);i++}
+  return out}
+function rubyNode(text){const f=document.createDocumentFragment();let buf='';
+  tokens(text).forEach(([ch,py])=>{if(py){if(buf){f.appendChild(document.createTextNode(buf));buf=''}
+    const r=document.createElement('ruby');r.className='p';r.appendChild(document.createTextNode(ch));const rt=document.createElement('rt');rt.textContent=py;r.appendChild(rt);f.appendChild(r)}else buf+=ch});
+  if(buf)f.appendChild(document.createTextNode(buf));return f}
+const SKIP='ruby,rt,script,style,select,option,input,textarea,.nopy,.tl-vi,.py,.timer,.lab,.tm,.blk,.week .dh';
+function addPy(root){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>(!CJK.test(n.nodeValue)||n.parentElement.closest(SKIP))?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  const list=[];while(w.nextNode())list.push(w.currentNode);list.forEach(n=>n.replaceWith(rubyNode(n.nodeValue)))}
+function removePy(root){root.querySelectorAll('ruby.p').forEach(r=>r.replaceWith(document.createTextNode(r.firstChild.nodeValue)));root.normalize()}
+let pyOn=true;
+function refreshPy(){const w=$('#wrap');if(pyOn)addPy(w);else removePy(w)}
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tl=vi=>vi?`<span class="tl-vi">${esc(vi)}</span>`:'';
+function load(k,d){try{const v=localStorage.getItem('zsJob_'+k);return v?JSON.parse(v):d}catch(e){return d}}
+function save(k,v){try{localStorage.setItem('zsJob_'+k,JSON.stringify(v))}catch(e){}}
+
+/* ---------- data ---------- */
+const DAYS=['一','二','三','四','五','六','日'];
+const DAYVI=['T2','T3','T4','T5','T6','T7','CN'];
+const MODES={walk:{zh:'走路',verb:'走路',t:'đi bộ'},bike:{zh:'YouBike',verb:'騎YouBike',t:'đạp YouBike'},mrt:{zh:'捷運',verb:'坐捷運',t:'tàu điện MRT'},bus:{zh:'公車',verb:'坐公車',t:'xe buýt'},taxi:{zh:'計程車',verb:'坐計程車',t:'taxi'}};
+const LOCS={
+ near:{n:'學校附近',opts:[['walk',10,0,''],['bike',5,10,'']]},
+ mrt:{n:'大寮捷運站旁邊',opts:[['walk',25,0,''],['bike',10,10,''],['bus',15,15,'晚上班次很少，要等很久']]},
+ fengshan:{n:'鳳山',opts:[['mrt',25,35,''],['bus',40,30,''],['bike',50,30,'很遠，晚上騎車不安全']]},
+ city:{n:'高雄市區',opts:[['mrt',40,45,''],['bus',70,30,'']]},
+ ind:{n:'大發工業區',opts:[['bus',30,20,'晚上10點以後沒有公車'],['bike',30,20,'路上大卡車很多，晚上很危險'],['taxi',15,200,'']]}
+};
+const T={'晚上班次很少，要等很久':'buổi tối ít chuyến, phải chờ lâu','很遠，晚上騎車不安全':'rất xa, đạp xe buổi tối không an toàn','晚上10點以後沒有公車':'sau 10 giờ tối không còn xe buýt','路上大卡車很多，晚上很危險':'đường nhiều xe tải lớn, buổi tối nguy hiểm'};
+const JOBS=[
+ {id:'breakfast',n:'早餐店服務生',loc:'near',w:196,meal:50,perk:'早餐免費',do:'點餐、送餐、收桌子',t:'Phục vụ quán ăn sáng: nhận order, bưng đồ, dọn bàn',f:'stand zh',
+  sh:[{k:'we',n:'週末早班',s:'06:30',e:'11:30',days:[5,6]}]},
+ {id:'cvs',n:'便利商店店員',loc:'mrt',w:200,meal:0,perk:'',do:'結帳、補貨、打掃',t:'Nhân viên cửa hàng tiện lợi: tính tiền, xếp hàng, dọn dẹp',f:'stand zh',
+  sh:[{k:'wn',n:'平日晚班',s:'18:00',e:'22:00',days:[0,1,2,3,4]},{k:'wd',n:'週末白班',s:'08:00',e:'16:00',days:[5,6]},{k:'nt',n:'大夜班',s:'22:00',e:'30:00',days:[4,5],night:1}]},
+ {id:'drink',n:'手搖飲店員',loc:'fengshan',w:196,meal:0,perk:'飲料免費',do:'做飲料、記住客人點什麼',t:'Nhân viên tiệm trà sữa: pha đồ uống, nhớ món khách gọi',f:'stand zh',
+  sh:[{k:'wn',n:'平日晚班',s:'17:30',e:'21:30',days:[0,1,2,3,4]},{k:'we',n:'週末班',s:'12:00',e:'20:00',days:[5,6]}]},
+ {id:'kitchen',n:'餐廳內場',loc:'near',w:200,meal:80,perk:'晚餐免費',do:'洗碗、切菜、準備食材',t:'Bếp sau nhà hàng: rửa bát, sơ chế',f:'stand hot',
+  sh:[{k:'wn',n:'平日晚班',s:'17:00',e:'21:00',days:[0,1,2,3,4]},{k:'we',n:'週末班',s:'11:00',e:'19:00',days:[5,6]}]},
+ {id:'tutor',n:'越南語家教',loc:'city',w:300,meal:0,perk:'',do:'教台灣小朋友說越南語',t:'Gia sư dạy tiếng Việt cho trẻ em Đài Loan',f:'zh',
+  sh:[{k:'wn',n:'平日晚上',s:'19:00',e:'21:00',days:[1,3]},{k:'we',n:'週末下午',s:'14:00',e:'16:00',days:[5,6]}]},
+ {id:'warehouse',n:'物流倉庫理貨',loc:'ind',w:220,meal:0,perk:'',do:'搬箱子、整理貨物',t:'Phân loại hàng ở kho: bê vác thùng nặng',f:'heavy',
+  sh:[{k:'nt',n:'大夜班',s:'22:00',e:'30:00',days:[0,1,2,3,4,5,6],night:1},{k:'wd',n:'週末白班',s:'08:00',e:'16:00',days:[5,6]}]}
+];
+const GOALS=[
+ {id:'phone',n:'三個月後買新手機',d:'新手機NT$24,000，三個月存好。',save:8000,extra:0,t:'Mua điện thoại mới 24.000 Đài tệ sau 3 tháng → mỗi tháng để dành 8.000'},
+ {id:'laptop',n:'半年後買筆電',d:'筆電NT$36,000，六個月存好。',save:6000,extra:0,t:'Mua laptop 36.000 Đài tệ sau 6 tháng → mỗi tháng 6.000'},
+ {id:'trip',n:'寒假去台北和花蓮玩',d:'旅費NT$12,000，兩個月存好。',save:6000,extra:0,t:'Nghỉ đông đi Đài Bắc và Hoa Liên: 12.000 Đài tệ trong 2 tháng → mỗi tháng 6.000'},
+ {id:'home',n:'寄錢回家',d:'每個月寄NT$5,000回家，還要存NT$2,000。',save:2000,extra:5000,t:'Mỗi tháng gửi về nhà 5.000 và để dành thêm 2.000'},
+ {id:'gift',n:'給媽媽買生日禮物',d:'禮物NT$8,000，兩個月存好。',save:4000,extra:0,t:'Quà sinh nhật mẹ 8.000 Đài tệ trong 2 tháng → mỗi tháng 4.000'},
+ {id:'emergency',n:'存緊急預備金',d:'每個月存NT$5,000，生病或有急事的時候用。',save:5000,extra:0,t:'Quỹ dự phòng: mỗi tháng để dành 5.000'}
+];
+const C=[
+ {id:'curfew',n:'宿舍晚上十點門禁',d:'晚上10點以前一定要回到宿舍。',t:'Ký túc xá đóng cửa 10 giờ tối'},
+ {id:'exam',n:'下個月要考試',d:'星期一到星期四晚上7點到10點要唸書。',t:'Sắp thi: tối T2–T5 (19–22h) phải học bài'},
+ {id:'club',n:'星期六上午練籃球',d:'星期六早上8點到12點要練球。',t:'Sáng thứ 7 (8–12h) tập bóng rổ'},
+ {id:'sunclass',n:'星期日上午上中文課',d:'星期日早上9點到12點要上中文補救課。',t:'Sáng CN (9–12h) học phụ đạo tiếng Trung'},
+ {id:'sleep',n:'一定要睡八個小時',d:'每天晚上至少要睡8個小時。',t:'Mỗi đêm phải ngủ đủ 8 tiếng'},
+ {id:'legs',n:'腳受過傷',d:'不能站太久。',t:'Chân từng bị thương, không đứng lâu được'},
+ {id:'hot',n:'很怕熱',d:'不想在很熱的地方工作。',t:'Rất sợ nóng, không muốn làm chỗ nóng'},
+ {id:'zh',n:'中文聽力還不太好',d:'聽不太懂很快的中文。',t:'Nghe tiếng Trung còn yếu'},
+ {id:'early',n:'早上起不來',d:'早上8點以前很難起床。',t:'Buổi sáng khó dậy trước 8 giờ'},
+ {id:'rest',n:'每週要休息兩天',d:'一個禮拜至少兩天不打工。',t:'Mỗi tuần nghỉ làm ít nhất 2 ngày'}
+];
+const ROLES=[{k:'job',zh:'工作',t:'Công việc'},{k:'sc',zh:'時間表',t:'Lịch tuần'},{k:'tr',zh:'交通',t:'Đi lại'},{k:'mo',zh:'收支',t:'Thu chi'}];
+const WHY_JOB=[['時薪','時薪比較高','lương giờ cao hơn'],['近','離宿舍比較近','gần ký túc xá hơn'],['輕鬆','工作比較輕鬆','việc nhẹ nhàng hơn'],['學中文','可以練習中文','luyện được tiếng Trung'],['員工餐','有員工餐','có bữa ăn nhân viên'],['時間','時間比較好排','dễ xếp giờ hơn']];
+const WHY_TR=[['快','比較快','nhanh hơn'],['便宜','比較便宜','rẻ hơn'],['安全','晚上比較安全','buổi tối an toàn hơn'],['方便','比較方便','tiện hơn']];
+const EXP=[
+ {k:'phone',zh:'手機月租',t:'Cước điện thoại',o:[[399,'399（網路少）'],[599,'599（網路夠用）'],[999,'999（網路吃到飽）']],per:1},
+ {k:'food',zh:'每天吃飯',t:'Tiền ăn mỗi ngày',o:[[200,'200（自己煮、吃便當）'],[250,'250（普通）'],[350,'350（常常吃外面）']],per:30},
+ {k:'fun',zh:'娛樂、飲料',t:'Giải trí, đồ uống',o:[[300,'300'],[1000,'1,000'],[2000,'2,000']],per:1},
+ {k:'daily',zh:'日用品',t:'Đồ dùng hằng ngày',o:[[300,'300'],[500,'500'],[800,'800']],per:1}
+];
+
+/* ---------- state ---------- */
+let state=load('state',null);
+if(!state){state={groups:8,cur:1,g:{}};
+  state.g[1]={pname:'阿明',goal:'trip',conds:['curfew','sleep'],names:['阿雄','小玲','阿德','小芳'],
+    job:{o:1,why:['近','時間'],though:'要站很久',but:'離宿舍很近，回宿舍很方便'},
+    sc:{sel:{wd:[5,6],wn:[1]},rest:'星期天下午在宿舍休息'},
+    tr:{o:1,why:['快','便宜'],though:'要花一點錢',but:'十分鐘就到了'},
+    mo:{phone:399,food:250,fun:1000,daily:300,iff:'少喝飲料，自己煮飯'},votes:0}}
+const G=()=>{const g=state.g[state.cur]||(state.g[state.cur]={});
+  g.pname=g.pname||'阿明';g.pro=g.pro||'他';g.names=g.names||['','','',''];g.conds=g.conds||[];g.job=g.job||{o:-1,why:[],though:'',but:''};
+  g.sc=g.sc||{sel:{},rest:''};g.tr=g.tr||{o:0,why:[],though:'',but:''};g.mo=g.mo||{phone:599,food:250,fun:1000,daily:500,iff:''};return g};
+const goalOf=g=>GOALS.find(x=>x.id===g.goal);
+const condOf=id=>C.find(c=>c.id===id);
+const has=(g,id)=>(g.conds||[]).includes(id);
+const persist=()=>save('state',state);
+
+/* ---------- time helpers ---------- */
+const tm=s=>{const [h,m]=(s||'0:00').split(':').map(Number);return h*60+m};
+const hhmm=m=>{m=((m%1440)+1440)%1440;return Math.floor(m/60)+':'+String(m%60).padStart(2,'0')};
+function clock(m){const nd=m>=1440?'第二天':'';m=((m%1440)+1440)%1440;const h=Math.floor(m/60),mm=m%60;
+  const pre=h<5?'凌晨':h<9?'早上':h<12?'上午':h<13?'中午':h<18?'下午':'晚上';const h12=h>12?h-12:(h===0?12:h);
+  return nd+pre+h12+'點'+(mm?(mm===30?'半':mm+'分'):'')}
+const hm=m=>{const h=Math.floor(m/60),r=m%60;return (h?h+'小時':'')+(r?r+'分鐘':(h?'':'0分鐘'))};
+const fmt=n=>Math.round(n).toLocaleString();
+
+/* ---------- calculations ---------- */
+const CLASS=[8*60,16*60+30];
+function condBlocks(g){const B=[];
+  if(has(g,'exam'))[0,1,2,3].forEach(d=>B.push({d,s:19*60,e:22*60,n:'唸書'}));
+  if(has(g,'club'))B.push({d:5,s:8*60,e:12*60,n:'練籃球'});
+  if(has(g,'sunclass'))B.push({d:6,s:9*60,e:12*60,n:'中文課'});
+  return B}
+function calc(g){
+  const job=JOBS[g.job.o];const out={job,shifts:[],warn:{job:[],sc:[],tr:[],mo:[]},hours:0};
+  if(!job){out.warn.job.push(['還沒選工作。','Chưa chọn công việc.']);}
+  const loc=job?LOCS[job.loc]:null;const com=loc?(loc.opts[g.tr.o]||loc.opts[0]):null;out.loc=loc;out.com=com;
+  const cm=com?com[1]:0;
+  if(job){job.sh.forEach(sh=>{(g.sc.sel[sh.k]||[]).filter(d=>sh.days.includes(d)).forEach(d=>{const s=tm(sh.s),e=tm(sh.e);out.shifts.push({d,s,e,sh,len:(e-s)/60})})});
+    out.shifts.sort((a,b)=>a.d-b.d||a.s-b.s)}
+  out.hours=out.shifts.reduce((t,x)=>t+x.len,0);out.trips=out.shifts.length;
+  const W=out.warn;const cb=condBlocks(g);
+  /* job */
+  if(job){if(/heavy/.test(job.f))W.job.push([`${g.pname}還沒滿18歲，不能做危險或有害的工作。搬很重的箱子不適合他。`,`${g.pname} chưa đủ 18 tuổi, không được làm việc nguy hiểm/có hại. Bê vác nặng không phù hợp.`]);
+    if(has(g,'legs')&&/stand/.test(job.f))W.job.push(['這個工作要站很久，他的腳受過傷。','Việc này phải đứng lâu, mà chân bạn ấy từng bị thương.']);
+    if(has(g,'hot')&&/hot/.test(job.f))W.job.push(['廚房很熱，他很怕熱。','Bếp rất nóng, mà bạn ấy sợ nóng.']);
+    if(has(g,'zh')&&/zh/.test(job.f))W.job.push(['這個工作要聽很多中文，他的中文聽力還不太好。','Việc này phải nghe nhiều tiếng Trung, mà khả năng nghe còn yếu.']);}
+  /* schedule */
+  if(job&&!out.shifts.length)W.sc.push(['還沒選班。','Chưa chọn ca làm.']);
+  if(out.hours>20)W.sc.push([`一個禮拜打工${out.hours}小時，超過二十小時了！學期中不可以。`,`Làm ${out.hours} giờ/tuần, vượt 20 giờ! Trong học kỳ không được phép.`]);
+  out.shifts.forEach(x=>{const day='星期'+DAYS[x.d];const a=x.s-cm,b=x.e+cm;x.bad=false;
+    if(x.d<5&&a<CLASS[1]&&b>CLASS[0]){x.bad=true;W.sc.push([`${day}的班跟上課時間衝突。`,`Ca ${DAYVI[x.d]} trùng giờ học.`])}
+    if(x.sh.night){W.sc.push([`${day}是大夜班，未滿18歲不適合上大夜班。`,`${DAYVI[x.d]} là ca đêm, không phù hợp với người chưa đủ 18 tuổi.`]);
+      if(x.d+1<=4||x.d===6){const nd=(x.d+1)%7;if(nd<5&&b>24*60+CLASS[0]-60){x.bad=true;W.sc.push([`${day}晚上上大夜班，第二天早上沒有時間睡覺就要上課。`,`Làm ca đêm ${DAYVI[x.d]}, sáng hôm sau không kịp ngủ đã phải đi học.`])}}}
+    if(has(g,'curfew')&&b>22*60){x.bad=true;W.sc.push([`${day}${clock(b)}才回到宿舍，超過十點門禁了。`,`${DAYVI[x.d]} về ký túc xá lúc ${hhmm(b)}, quá giờ đóng cửa 10 giờ.`])}
+    cb.forEach(c=>{if(c.d===x.d&&a<c.e&&b>c.s){x.bad=true;W.sc.push([`${day}${c.n}的時間不能打工。`,`${DAYVI[x.d]} là giờ ${c.n}, không đi làm được.`])}});
+    if(has(g,'early')&&a<8*60)W.sc.push([`${day}${clock(a)}就要出門，他早上起不來。`,`${DAYVI[x.d]} phải ra khỏi nhà lúc ${hhmm(a)}, mà bạn ấy khó dậy sớm.`]);});
+  /* sleep per night */
+  out.sleep=[];
+  for(let d=0;d<7;d++){const today=out.shifts.filter(x=>x.d===d);let back=Math.max(22*60,...today.map(x=>x.e+cm));
+    let bed=Math.max(23*60,back+30);const nd=(d+1)%7;const tomorrow=out.shifts.filter(x=>x.d===nd);
+    let wake=nd<5?7*60:9*60;if(nd===5&&has(g,'club'))wake=7*60;if(nd===6&&has(g,'sunclass'))wake=8*60;
+    tomorrow.forEach(x=>{wake=Math.min(wake,x.s-cm-30)});
+    out.sleep.push(Math.max(0,(24*60+wake-bed)/60))}
+  out.minSleep=Math.min(...out.sleep);const need=has(g,'sleep')?8:7;
+  if(out.shifts.length&&out.minSleep<need){const d=out.sleep.indexOf(out.minSleep);W.sc.push([`星期${DAYS[d]}晚上只能睡${out.minSleep.toFixed(1).replace('.0','')}個小時，${has(g,'sleep')?'不到八個小時':'太少了'}。`,`Đêm ${DAYVI[d]} chỉ ngủ được ${out.minSleep.toFixed(1)} tiếng.`])}
+  const workDays=new Set(out.shifts.map(x=>x.d)).size;out.restDays=7-workDays;
+  if(out.shifts.length&&out.restDays<(has(g,'rest')?2:1))W.sc.push([has(g,'rest')?'一個禮拜要休息兩天，現在不夠。':'一個禮拜都沒有休息。',has(g,'rest')?'Cần nghỉ 2 ngày/tuần, hiện chưa đủ.':'Cả tuần không có ngày nghỉ.']);
+  /* transport */
+  if(com){const late=out.shifts.some(x=>x.e>=21*60||x.s>=21*60);const night=out.shifts.some(x=>x.e>22*60);
+    if(com[3]==='晚上10點以後沒有公車'&&out.shifts.some(x=>x.e>22*60||x.s>=22*60))W.tr.push(['晚上十點以後沒有公車，他怎麼上下班？','Sau 10 giờ tối không có xe buýt, đi làm/về bằng gì?']);
+    if(com[0]==='bike'&&/危險|不安全/.test(com[3])&&late)W.tr.push(['晚上騎車回宿舍不安全。','Đạp xe về ký túc xá buổi tối không an toàn.']);
+    if(com[0]==='bus'&&/班次很少/.test(com[3])&&late)W.tr.push(['晚上公車很少，下班要等很久。','Buổi tối ít xe buýt, tan làm phải chờ lâu.']);
+    if(com[1]>=40&&out.trips>=3)W.tr.push([`單程要${com[1]}分鐘，一個禮拜去${out.trips}次，花很多時間在路上。`,`Một chiều ${com[1]} phút, ${out.trips} lần/tuần, tốn nhiều thời gian đi đường.`]);}
+  /* money (per month = 4 weeks) */
+  const goal=goalOf(g);const M=g.mo;
+  out.income=job?out.hours*job.w*4:0;
+  out.tcost=com?com[2]*2*out.trips*4:0;
+  out.mealSave=job?job.meal*out.trips*4:0;
+  out.exp={phone:M.phone,food:M.food*30-out.mealSave,fun:M.fun,daily:M.daily,tr:out.tcost,home:goal?goal.extra:0};
+  out.spend=Object.values(out.exp).reduce((a,b)=>a+b,0);
+  out.saveAmt=out.income-out.spend;out.goal=goal?goal.save:0;
+  if(!goal)W.mo.push(['還沒有存錢目標。','Chưa có mục tiêu để dành.']);
+  else if(out.saveAmt<out.goal)W.mo.push([`一個月只能存${fmt(out.saveAmt)}塊，目標是${fmt(out.goal)}塊，還差${fmt(out.goal-out.saveAmt)}塊。`,`Mỗi tháng chỉ để dành ${fmt(out.saveAmt)}, mục tiêu ${fmt(out.goal)}, còn thiếu ${fmt(out.goal-out.saveAmt)}.`]);
+  return out}
+
+/* ---------- shared UI ---------- */
+function warnHTML(list,okMsg){list=list.map(w=>[PRO(w[0]),w[1]]);if(!list.length)return okMsg?`<div class="okbox">${okMsg[0]}${tl(okMsg[1])}</div>`:'';
+  return `<div class="warnbox"><b>想一想：</b>${tl('Cần xem lại:')}${list.map(w=>`<div style="margin-top:6px">${esc(w[0])}${tl(w[1])}</div>`).join('')}</div>`}
+function metersHTML(R){const hp=Math.min(100,R.hours/20*100);const over=R.hours>20;
+  const gp=R.goal?Math.max(0,Math.min(100,R.saveAmt/R.goal*100)):0;const ok=R.goal&&R.saveAmt>=R.goal;
+  return `<div class="meters"><div class="mrow"><div class="mt"><span class="btotal ${over?'over':''}">每週打工 ${R.hours} / 20 小時</span><span class="small">${over?'超過了！'+tl('Vượt quá!'):tl('Trong học kỳ tối đa 20 giờ/tuần')}</span></div><div class="meter ${over?'over':''}"><span class="${over?'badfill':'hrs'}" style="width:${hp}%"></span></div></div>
+   <div class="mrow"><div class="mt"><span class="btotal ${R.goal&&!ok?'over':''}">每月存 NT$${fmt(R.saveAmt)} / 目標 NT$${fmt(R.goal)}</span><span class="small">${ok?'達到目標了！'+tl('Đạt mục tiêu!'):tl('Chưa đạt mục tiêu')}</span></div><div class="meter"><span class="${ok?'ok':'badfill'}" style="width:${gp}%"></span></div></div></div>`}
+function gpickHTML(g){const vi=$('#wrap').dataset.lang!=='off';
+  const gOpts=`<option value="">—</option>`+GOALS.map(x=>`<option value="${x.id}" ${x.id===g.goal?'selected':''}>${x.n}</option>`).join('');
+  const cOpts=i=>`<option value="">（沒有）</option>`+C.map(c=>`<option value="${c.id}" ${g.conds[i]===c.id?'selected':''}>${c.n}${vi?'｜'+c.t:''}</option>`).join('');
+  return `<div class="gpick nopy"><label>目標 <select class="selGoal" aria-label="目標">${gOpts}</select></label><label>條件一 <select class="selC" data-i="0" aria-label="條件一">${cOpts(0)}</select></label><label>條件二 <select class="selC" data-i="1" aria-label="條件二">${cOpts(1)}</select></label></div>`}
+function renderGbar(){const g=G();const R=calc(g);const goal=goalOf(g);const pickers=gpickHTML(g);
+  const html=`<div><div class="region">第${state.cur}組 · 17歲 · 中山工商僑生</div><div class="gname">${esc(g.pname)}</div></div>
+   <div>${goal?`<span class="cchip" style="background:#e0e7ff;color:var(--accent)">${esc(goal.n)}</span>`:''}${g.conds.filter(Boolean).map(id=>{const c=condOf(id);return `<span class="cchip">${esc(c.n)}${tl(c.t)}</span>`}).join('')}</div>${metersHTML(R)}${pickers}`;
+  $$('[data-gbar]').forEach(el=>el.innerHTML=html);$$('[data-gpick]').forEach(el=>el.innerHTML=pickers);
+  $$('[data-who]').forEach(el=>{const i=+el.dataset.who;el.textContent=g.names[i]?'· '+g.names[i]:''});return R}
+const dots=n=>'●'.repeat(n)+'○'.repeat(5-n);
+function checksHTML(list,sel,name){return list.map(w=>`<label><input type="checkbox" name="${name}" value="${w[0]}" ${sel.includes(w[0])?'checked':''}>${w[1]}${tl(w[2])}</label>`).join('')}
+const pick=(list,keys)=>keys.map(k=>list.find(w=>w[0]===k)).filter(Boolean);
+const nm=(g,i)=>g.names[i]||'下一位同學';
+const mk=s=>`<mark>${esc(s)}</mark>`;
+const blank=s=>s?mk(s):'<mark>＿＿＿</mark>';
+function weekHTML(g,R){const H=100/24;let h=`<div class="week"><div></div>${DAYS.map(d=>`<div class="dh">${d}</div>`).join('')}<div class="axis">${[0,4,8,12,16,20,24].map(x=>`<span style="top:${x*H}%">${x}</span>`).join('')}</div>`;
+  const cb=condBlocks(g);const cm=R.com?R.com[1]:0;
+  const cols=DAYS.map(()=>[]);
+  for(let d=0;d<5;d++)cols[d].push({cls:'cls',s:CLASS[0],e:CLASS[1],n:'上課'});
+  cb.forEach(c=>cols[c.d].push({cls:'cond',s:c.s,e:c.e,n:c.n}));
+  R.shifts.forEach(x=>{const add=(d,s,e,lab)=>cols[d].push({cls:'shift'+(x.bad?' badblk':''),s,e,n:lab});
+    if(cm){cols[x.d].push({cls:'com',s:Math.max(0,x.s-cm),e:x.s,n:''});
+      if(x.e<1440)cols[x.d].push({cls:'com',s:x.e,e:Math.min(1440,x.e+cm),n:''});else cols[(x.d+1)%7].push({cls:'com',s:x.e-1440,e:x.e-1440+cm,n:''})}
+    if(x.e<=1440)add(x.d,x.s,x.e,hhmm(x.s)+'–'+hhmm(x.e)+' 打工');else{add(x.d,x.s,1440,hhmm(x.s)+' 打工');add((x.d+1)%7,0,x.e-1440,'–'+hhmm(x.e))}});
+  const grid=cols.map(list=>`<div class="col">${list.map(b=>`<div class="blk ${b.cls}" style="top:${b.s/60*H}%;height:${Math.max(1,(b.e-b.s)/60*H)}%">${esc(b.n)}</div>`).join('')}</div>`).join('');
+  return h+grid+'</div>'}
+
+const PRO=s=>G().pro==='她'?String(s).replace(/他/g,'她'):s;
+/* ---------- tabs ---------- */
+const panels=['draw','job','sc','tr','mo','sum','slides','present','board','vocab'];
+let curTab='draw';
+function show(t){curTab=t;panels.forEach(p=>{$('#p-'+p).hidden=p!==t});
+  $$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));save('tab',t);render()}
+$$('#tabs button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.t)));
+function render(){renderGbar();({draw:renderDraw,job:renderJob,sc:renderSc,tr:renderTr,mo:renderMo,sum:renderSum,slides:renderSlides,present:renderStage,board:renderBoard,vocab:()=>{}})[curTab]();refreshPy()}
+function grpOptions(){const s=$('#grpSel');s.innerHTML='';for(let i=1;i<=state.groups;i++){const o=document.createElement('option');o.value=i;o.textContent='第'+i+'組';s.appendChild(o)}s.value=state.cur}
+$('#grpSel').onchange=e=>{state.cur=+e.target.value;persist();spk=0;render()};
+function scriptsOnly(){const g=G();const R=calc(g);const m={job:['#scJob',scriptJob],sc:['#scSc',scriptSc],tr:['#scTr',scriptTr],mo:['#scMo',scriptMo]}[curTab];if(m)$(m[0]).innerHTML=m[1](g,R);renderGbar();refreshPy()}
+
+/* ---------- draw ---------- */
+function renderDraw(){const g=G();const goal=goalOf(g);
+  $('#grpCount').value=state.groups;$('#pName').value=g.pname;$('#pPro').value=g.pro;
+  $('#personaBox').innerHTML=PRO(`<div class="persona"><div class="pname">${esc(g.pname)}</div><div>17歲，中山工商的僑生，住在學校宿舍。<br>星期一到星期五，早上8點到下午4點半上課。${tl('17 tuổi, học sinh 僑生 trường Trung Sơn, ở ký túc xá trường. T2–T6 học từ 8:00 đến 16:30.')}</div></div>`);
+  $('#tkGoalBig').textContent=goal?goal.n:'？';$('#tkGoalSub').innerHTML=goal?esc(goal.d)+tl(goal.t):'按「抽目標」'+tl('Bấm “抽目標” để bốc mục tiêu');
+  $('#tkCondBig').textContent=g.conds.length?g.conds.map(id=>condOf(id).n).join('、'):'？';
+  $('#tkCondSub').innerHTML=g.conds.length?g.conds.map(id=>{const c=condOf(id);return esc(c.d)+tl(c.t)}).join(''):'按「抽兩個條件」'+tl('Bấm để bốc 2 điều kiện');
+  $('#namesBox').innerHTML=ROLES.map((r,i)=>`<div class="field"><label for="nm${i}">${['②','③','④','⑤'][i]} ${r.zh}${tl(r.t)}</label><input type="text" id="nm${i}" value="${esc(g.names[i])}" placeholder="名字 tên"></div>`).join('');
+  ROLES.forEach((r,i)=>$('#nm'+i).addEventListener('input',e=>{G().names[i]=e.target.value;persist()}));
+  const tb=$('#drawTable tbody');tb.innerHTML='';
+  for(let i=1;i<=state.groups;i++){const x=state.g[i]||{};const go=GOALS.find(z=>z.id===x.goal);const tr=document.createElement('tr');if(i===state.cur)tr.className='cur';
+    tr.innerHTML=`<td class="mono">${i}</td><td>${esc(x.pname||'—')}</td><td>${go?esc(go.n):'—'}</td><td>${(x.conds||[]).map(id=>esc(condOf(id).n)).join('、')||'—'}</td><td>${(x.names||[]).filter(Boolean).map(esc).join('、')||'—'}</td>`;tb.appendChild(tr)}}
+$('#pPro').addEventListener('change',e=>{G().pro=e.target.value;persist();render()});
+$('#pName').addEventListener('input',e=>{G().pname=e.target.value.trim()||'阿明';persist();renderGbar();refreshPy()});
+function spin(el,list,cb){el.classList.add('spin');const big=el.querySelector('.big');let n=0;const total=matchMedia('(prefers-reduced-motion: reduce)').matches?1:16;
+  const iv=setInterval(()=>{big.textContent=list[Math.floor(Math.random()*list.length)];if(++n>=total){clearInterval(iv);el.classList.remove('spin');cb()}},70)}
+$('#btnDrawGoal').onclick=()=>{const used=Object.entries(state.g).filter(([k,x])=>+k!==state.cur&&+k<=state.groups&&x.goal).map(([,x])=>x.goal);
+  let pool=GOALS.filter(x=>!used.includes(x.id));if(!pool.length)pool=GOALS;const p=pool[Math.floor(Math.random()*pool.length)];
+  spin($('#tkGoal'),GOALS.map(x=>x.n),()=>{G().goal=p.id;persist();render()})};
+$('#btnDrawCond').onclick=()=>{const a=[...C].sort(()=>Math.random()-.5).slice(0,2).map(c=>c.id);spin($('#tkCond'),C.map(x=>x.n),()=>{G().conds=a;persist();render()})};
+function setCond(g,i,id){const c=[g.conds[0]||'',g.conds[1]||''];const o=1-i;if(id&&c[o]===id)c[o]=c[i];c[i]=id;g.conds=c.filter(Boolean)}
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.classList.contains('selGoal')){G().goal=t.value||undefined;persist();render()}
+  else if(t.classList.contains('selC')){setCond(G(),+t.dataset.i,t.value);persist();render()}});
+$('#grpCount').onchange=e=>{state.groups=Math.max(2,Math.min(10,+e.target.value||8));if(state.cur>state.groups)state.cur=1;persist();grpOptions();render()};
+let armed=false;$('#btnResetDraw').onclick=()=>{if(!armed){armed=true;$('#resetMsg').innerHTML='再按一次會清除所有組的資料。'+tl('Bấm lần nữa để xóa dữ liệu của tất cả các nhóm.');refreshPy();setTimeout(()=>{armed=false;$('#resetMsg').innerHTML=''},5000);return}
+  armed=false;state.g={};state.cur=1;persist();grpOptions();$('#resetMsg').innerHTML='已清除。'+tl('Đã xóa.');render()};
+
+/* ---------- job ---------- */
+const LAW=[['2026年的基本工資：時薪196塊。時薪不可以比這個低。','Lương tối thiểu năm 2026: 196 Đài tệ/giờ. Lương giờ không được thấp hơn.'],
+ ['僑生打工以前，要先申請工作許可（工作證）。','Học sinh 僑生 phải xin giấy phép lao động (工作證) trước khi đi làm thêm.'],
+ ['學期中每個禮拜最多打工二十個小時；寒暑假沒有這個限制，但是還是要遵守勞基法。','Trong học kỳ tối đa 20 giờ/tuần; nghỉ đông/hè không giới hạn nhưng vẫn phải theo Luật Lao động.'],
+ ['未滿18歲：要有家長（法定代理人）同意書，不可以做危險或有害的工作。','Dưới 18 tuổi: cần giấy đồng ý của phụ huynh/người giám hộ, không được làm việc nguy hiểm hoặc có hại.']];
+function renderJob(){const g=G();
+  $('#lawBox').innerHTML=`<h3>打工以前要知道${tl('Cần biết trước khi đi làm thêm')}</h3><ul>${LAW.map(l=>`<li>${l[0]}${tl(l[1])}</li>`).join('')}</ul><div class="small">真正的規定，請問學校的僑生輔導老師。${tl('Quy định cụ thể của trường: hỏi thầy cô phụ trách học sinh 僑生.')}</div>`;
+  $('#jobOpts').innerHTML=JOBS.map((j,i)=>`<div class="opt clickable ${i==g.job.o?'pick':''}" data-i="${i}"><div class="opt-title"><h3><input type="radio" name="jo" ${i==g.job.o?'checked':''} aria-label="${esc(j.n)}"> ${esc(j.n)}</h3><span class="tag">時薪 NT$${j.w}</span></div>${tl(j.t)}
+    <dl class="kv"><dt>在哪裡</dt><dd>${esc(LOCS[j.loc].n)}</dd><dt>做什麼</dt><dd>${esc(j.do)}</dd><dt>班</dt><dd>${j.sh.map(s=>`${esc(s.n)} ${s.s}–${hhmm(tm(s.e))}（星期${s.days.map(d=>DAYS[d]).join('、')}）`).join('<br>')}</dd>${j.perk?`<dt>好處</dt><dd>${esc(j.perk)}</dd>`:''}</dl>
+    <div>${/stand/.test(j.f)?'<span class="badge f">要站很久</span>':''}${/hot/.test(j.f)?'<span class="badge f">很熱</span>':''}${/zh/.test(j.f)?'<span class="badge outd">中文要好</span>':''}${/heavy/.test(j.f)?'<span class="badge f">搬重物</span>':''}${j.sh.some(s=>s.night)?'<span class="badge f">有大夜班</span>':''}</div></div>`).join('');
+  $$('#jobOpts .opt').forEach(el=>el.onclick=()=>{const g=G();const i=+el.dataset.i;if(g.job.o!==i){g.job.o=i;g.sc.sel={};g.tr.o=0}persist();render()});
+  $('#jobWhy').innerHTML=checksHTML(WHY_JOB,g.job.why,'jw');$('#jobThough').value=g.job.though;$('#jobBut').value=g.job.but;
+  $$('#jobWhy input').forEach(i=>i.onchange=()=>{G().job.why=$$('#jobWhy input:checked').map(x=>x.value);persist();scriptsOnly()});
+  const R=calc(g);$('[data-warn="job"]').innerHTML=warnHTML(R.warn.job,['工作沒有問題！','Phần công việc ổn!']);$('#scJob').innerHTML=scriptJob(g,R)}
+$('#jobThough').addEventListener('input',e=>{G().job.though=e.target.value.trim();persist();scriptsOnly()});
+$('#jobBut').addEventListener('input',e=>{G().job.but=e.target.value.trim();persist();scriptsOnly()});
+function scriptJob(g,R){return PRO(scriptJob_(g,R))}
+function scriptJob_(g,R){const goal=goalOf(g);const j=R.job;const why=pick(WHY_JOB,g.job.why).map(w=>w[1]).join('，而且');
+  const intro=`<p>大家好！我們是第${state.cur}組。我們的角色是${mk(g.pname)}，他17歲，是中山工商的僑生。</p><p>他想${goal?mk(goal.n):blank('')}，所以要去打工。他的條件是：${g.conds.map(id=>mk(condOf(id).n)).join('、')||'＿＿'}。</p><p>我是${blank(g.names[0])}，我負責找工作。</p>`;
+  if(!j)return intro+'<p>（先選一個工作）</p>';
+  return intro+`<p>我們選了${mk(j.n)}，在${mk(LOCS[j.loc].n)}。時薪${mk(j.w+'塊')}。</p><p>這個工作要${esc(j.do)}。${j.perk?esc(j.perk)+'。':''}</p>
+  <p>我們選這個工作，因為${why?mk(why):blank('')}。</p><p>雖然${blank(g.job.though)}，但是${blank(g.job.but)}。</p>
+  <p>打工以前，他要先申請工作證。他還沒滿18歲，所以也要有家長同意書。</p>
+  <p>他什麼時候去上班呢？請${mk(nm(g,1))}說說他的時間表。</p>`}
+
+/* ---------- schedule ---------- */
+function renderSc(){const g=G();const j=JOBS[g.job.o];
+  if(!j){$('#scGrid').innerHTML=`<tr><td>先到「② 工作」選一個工作。${tl('Hãy chọn công việc ở tab ② trước.')}</td></tr>`;$('#weekOut').innerHTML='';$('#scSc').innerHTML='';return}
+  $('#scGrid').innerHTML=`<thead><tr><th>班</th>${DAYS.map((d,i)=>`<th>${d}${tl(DAYVI[i])}</th>`).join('')}</tr></thead><tbody>${j.sh.map(s=>`<tr><td>${esc(s.n)}<div class="small mono">${s.s}–${hhmm(tm(s.e))} · ${(tm(s.e)-tm(s.s))/60}小時</div></td>${DAYS.map((d,i)=>`<td>${s.days.includes(i)?`<input type="checkbox" data-k="${s.k}" data-d="${i}" ${(g.sc.sel[s.k]||[]).includes(i)?'checked':''} aria-label="${esc(s.n)} 星期${d}">`:'—'}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  $$('#scGrid input').forEach(cb=>cb.onchange=()=>{const g=G();const k=cb.dataset.k,d=+cb.dataset.d;const L=new Set(g.sc.sel[k]||[]);cb.checked?L.add(d):L.delete(d);g.sc.sel[k]=[...L].sort();persist();render()});
+  const R=calc(g);$('#weekOut').innerHTML=weekHTML(g,R);$('#scRest').value=g.sc.rest||'';
+  $('[data-warn="sc"]').innerHTML=warnHTML(R.warn.sc,['時間表沒有問題！','Lịch tuần ổn!']);$('#scSc').innerHTML=scriptSc(g,R)}
+$('#scRest').addEventListener('input',e=>{G().sc.rest=e.target.value.trim();persist();scriptsOnly()});
+function scriptSc(g,R){return PRO(scriptSc_(g,R))}
+function scriptSc_(g,R){if(!R.job)return '<p>（先選工作）</p>';
+  const groups={};R.shifts.forEach(x=>{const key=x.s+'-'+x.e;(groups[key]=groups[key]||{x,days:[]}).days.push(x.d)});
+  const lines=Object.values(groups).map(o=>`星期${o.days.map(d=>DAYS[d]).join('、')}，${mk(clock(o.x.s))}到${mk(clock(o.x.e))}`).join('；');
+  const rest=DAYS.map((d,i)=>i).filter(i=>!R.shifts.some(x=>x.d===i)).map(i=>DAYS[i]);
+  return `<p>我是${blank(g.names[1])}，我負責排時間。</p><p>${esc(g.pname)}星期一到星期五白天要上課，早上8點到下午4點半。</p>
+  <p>他打工的時間是：${lines||'<mark>＿＿＿</mark>'}。</p>
+  <p>一個禮拜一共打工${mk(R.hours+'個小時')}，${R.hours>20?'超過了二十個小時。':'沒有超過二十個小時。'}</p>
+  <p>${rest.length?`星期${rest.join('、')}他不用上班。`:'他每天都要上班。'}${g.sc.rest?`休息的時候，他${mk(g.sc.rest)}。`:''}</p>
+  <p>他每天晚上最少可以睡${mk(R.minSleep.toFixed(1).replace('.0','')+'個小時')}。</p>
+  <p>他要怎麼去上班呢？請${mk(nm(g,2))}告訴大家。</p>`}
+
+/* ---------- transport ---------- */
+function renderTr(){const g=G();const j=JOBS[g.job.o];
+  if(!j){$('#trOpts').innerHTML=`<div class="box">先到「② 工作」選一個工作。${tl('Hãy chọn công việc ở tab ② trước.')}</div>`;$('#scTr').innerHTML='';return}
+  const L=LOCS[j.loc];const R0=calc(g);
+  $('#trOpts').innerHTML=L.opts.map((o,i)=>{const M=MODES[o[0]];const wk=o[2]*2*R0.trips;return `<div class="opt clickable ${i==g.tr.o?'pick':''}" data-i="${i}"><div class="opt-title"><h3><input type="radio" name="tro" ${i==g.tr.o?'checked':''} aria-label="${M.zh}"> ${M.zh}</h3><span class="tag">單程 ${o[1]}分</span></div>${tl(M.t)}
+    <dl class="kv"><dt>從</dt><dd>學校宿舍</dd><dt>到</dt><dd>${esc(L.n)}</dd><dt>單程</dt><dd>${o[2]?'NT$'+o[2]:'免費'}</dd><dt>一個禮拜</dt><dd>${R0.trips}次來回 · NT$${wk}</dd></dl>${o[3]?`<div class="note">${esc(o[3])}${tl(T[o[3]])}</div>`:''}</div>`}).join('');
+  $$('#trOpts .opt').forEach(el=>el.onclick=()=>{G().tr.o=+el.dataset.i;persist();render()});
+  $('#trWhy').innerHTML=checksHTML(WHY_TR,g.tr.why,'tw');$('#trThough').value=g.tr.though;$('#trBut').value=g.tr.but;
+  $$('#trWhy input').forEach(i=>i.onchange=()=>{G().tr.why=$$('#trWhy input:checked').map(x=>x.value);persist();scriptsOnly()});
+  const R=calc(g);$('[data-warn="tr"]').innerHTML=warnHTML(R.warn.tr,['交通沒有問題！','Phần đi lại ổn!']);$('#scTr').innerHTML=scriptTr(g,R)}
+$('#trThough').addEventListener('input',e=>{G().tr.though=e.target.value.trim();persist();scriptsOnly()});
+$('#trBut').addEventListener('input',e=>{G().tr.but=e.target.value.trim();persist();scriptsOnly()});
+function scriptTr(g,R){return PRO(scriptTr_(g,R))}
+function scriptTr_(g,R){if(!R.com)return '<p>（先選工作）</p>';const c=R.com,M=MODES[c[0]];const why=pick(WHY_TR,g.tr.why).map(w=>w[1]).join('，而且');
+  const lastEnd=R.shifts.length?Math.max(...R.shifts.map(x=>x.e)):0;
+  return `<p>我是${blank(g.names[2])}，我負責交通。</p><p>從學校宿舍到${mk(R.loc.n)}，他打算${mk(M.verb)}，要${mk(c[1]+'分鐘')}，${c[2]?'單程'+mk(c[2]+'塊'):'不用錢'}。</p>
+  <p>一個禮拜去上班${mk(R.trips+'次')}，交通費一個禮拜${mk(c[2]*2*R.trips+'塊')}，一個月大概${mk(fmt(R.tcost)+'塊')}。</p>
+  ${R.shifts.length?`<p>最晚${mk(clock(lastEnd))}下班，${mk(clock(lastEnd+c[1]))}回到宿舍。</p>`:''}
+  <p>我們選這個方法，因為${why?mk(why):blank('')}。</p><p>雖然${blank(g.tr.though)}，但是${blank(g.tr.but)}。</p>
+  <p>他能存到錢嗎？請${mk(nm(g,3))}說說錢的部分。</p>`}
+
+/* ---------- money ---------- */
+function renderMo(){const g=G();
+  $('#moExp').innerHTML=EXP.map(x=>`<div class="field"><label for="ex_${x.k}">${x.zh}${tl(x.t)}</label><select id="ex_${x.k}">${x.o.map(o=>`<option value="${o[0]}" ${g.mo[x.k]==o[0]?'selected':''}>NT$${o[1]}${x.per>1?' × 30天':''}</option>`).join('')}</select></div>`).join('');
+  EXP.forEach(x=>$('#ex_'+x.k).onchange=e=>{G().mo[x.k]=+e.target.value;persist();render()});
+  $('#moIf').value=g.mo.iff||'';const R=calc(g);
+  const rows=[['打工收入',`${R.hours}小時 × ${R.job?R.job.w:0}塊 × 4週`,R.income,1],['手機月租','',-R.exp.phone],['吃飯',`${g.mo.food}×30${R.mealSave?' − 員工餐'+R.mealSave:''}`,-R.exp.food],['娛樂、飲料','',-R.exp.fun],['日用品','',-R.exp.daily],['交通',`${R.trips}次來回 × 4週`,-R.exp.tr]];
+  if(R.exp.home)rows.push(['寄回家','',-R.exp.home]);
+  $('#moTable').innerHTML=`<thead><tr><th>項目</th><th>怎麼算</th><th style="text-align:right">NT$</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="small">${esc(r[1])}</td><td class="num">${r[2]>0?'+':''}${fmt(r[2])}</td></tr>`).join('')}
+   <tr><td><b>每個月可以存</b></td><td></td><td class="num"><b class="${R.saveAmt<R.goal?'btotal over':''}">${fmt(R.saveAmt)}</b></td></tr><tr><td>目標</td><td></td><td class="num">${fmt(R.goal)}</td></tr></tbody>`;
+  $('[data-warn="mo"]').innerHTML=warnHTML(R.warn.mo,['可以達到目標！','Đạt được mục tiêu!']);$('#scMo').innerHTML=scriptMo(g,R)}
+$('#moIf').addEventListener('input',e=>{G().mo.iff=e.target.value.trim();persist();scriptsOnly()});
+function scriptMo(g,R){return PRO(scriptMo_(g,R))}
+function scriptMo_(g,R){const goal=goalOf(g);const ok=R.saveAmt>=R.goal;
+  return `<p>我是${blank(g.names[3])}，我負責收支。</p>
+  <p>他一個禮拜打工${mk(R.hours+'個小時')}，時薪${mk((R.job?R.job.w:0)+'塊')}，一個月大概可以賺${mk(fmt(R.income)+'塊')}。</p>
+  <p>每個月要花的錢有：手機${mk(R.exp.phone+'塊')}、吃飯${mk(fmt(R.exp.food)+'塊')}、娛樂${mk(R.exp.fun+'塊')}、日用品${mk(R.exp.daily+'塊')}、交通${mk(R.exp.tr+'塊')}${R.exp.home?'、寄回家'+mk(R.exp.home+'塊'):''}，一共${mk(fmt(R.spend)+'塊')}。</p>
+  <p>所以他每個月可以存${mk(fmt(R.saveAmt)+'塊')}，${ok?'可以達到':'還不能達到'}他的目標${mk(fmt(R.goal)+'塊')}。</p>
+  ${g.mo.iff?`<p>如果錢不夠，他就${mk(g.mo.iff.replace(/^(如果錢不夠，?)?(他)?就?/,''))}。</p>`:''}
+  <p>這就是${esc(g.pname)}的打工計畫。謝謝大家！</p>`}
+
+/* ---------- summary ---------- */
+const PHR=[['這個班太晚了，他回不了宿舍。','Ca này muộn quá, bạn ấy không về kịp ký túc xá.'],['如果少上一天班，就少賺＿＿塊。','Nếu bớt một ca thì kiếm ít hơn ___ Đài tệ.'],['我覺得＿＿比較好，因為＿＿。','Mình thấy ___ tốt hơn, vì ___.'],['錢不夠的話，我們可以換便宜的手機月租。','Nếu không đủ tiền, có thể đổi gói cước rẻ hơn.'],['他這樣只能睡＿＿個小時，太累了。','Như vậy chỉ ngủ được ___ tiếng, mệt quá.'],['好，那我們就這樣決定吧！','Được, vậy mình quyết định vậy nhé!']];
+function problems(R){return ROLES.reduce((n,r)=>n+R.warn[r.k].length,0)}
+function renderSum(){const g=G();const R=calc(g);const goal=goalOf(g);
+  $('#sumTable').innerHTML=`<tbody><tr><td>工作</td><td>${R.job?esc(R.job.n)+'・時薪'+R.job.w:'（還沒選）'}</td></tr><tr><td>每週工時</td><td class="mono">${R.hours} 小時（${R.trips} 天）</td></tr>
+   <tr><td>交通</td><td>${R.com?MODES[R.com[0]].zh+'・單程'+R.com[1]+'分':'—'}</td></tr><tr><td>最少睡</td><td class="mono">${R.minSleep.toFixed(1)} 小時</td></tr>
+   <tr><td>每月收入</td><td class="mono">NT$${fmt(R.income)}</td></tr><tr><td>每月支出</td><td class="mono">NT$${fmt(R.spend)}</td></tr>
+   <tr><td><b>每月存</b></td><td class="mono"><b class="${R.saveAmt<R.goal?'btotal over':''}">NT$${fmt(R.saveAmt)}</b>（目標 ${fmt(R.goal)}）</td></tr></tbody>`;
+  const all=[];ROLES.forEach((r,i)=>R.warn[r.k].forEach(w=>all.push([`【${r.zh}・${g.names[i]||''}】`+w[0],`[${r.t}] `+w[1]])));
+  $('#sumWarn').innerHTML=warnHTML(all,['全部沒有問題，可以準備上台了！','Mọi thứ ổn, chuẩn bị lên trình bày thôi!']);
+  $('#sumWeek').innerHTML=weekHTML(g,R);
+  $('#phr').innerHTML=PHR.map(p=>`<div>${p[0]}${tl(p[1])}</div>`).join('');
+  $('#beforeInfo').innerHTML=g.before?`已記錄：每月存NT$${fmt(g.before.save)}，問題${g.before.problems}個`+tl('Đã lưu: để dành '+fmt(g.before.save)+'/tháng, '+g.before.problems+' vấn đề'):'';$('#changesIn').value=g.changes||''}
+$('#btnBefore').onclick=()=>{const g=G();const R=calc(g);g.before={save:R.saveAmt,hours:R.hours,problems:problems(R)};persist();render()};
+$('#changesIn').addEventListener('input',e=>{G().changes=e.target.value.trim();persist()});
+
+/* ---------- slides (Canva helper) ---------- */
+const CARDS=[['cover','封面','Bìa','全組'],['job','工作','Công việc',0],['week','時間表','Lịch tuần',1],['tr','交通','Đi lại',2],['mo','收支','Thu chi',3],['ba','我們怎麼合作','Nhóm làm việc thế nào','全組'],['end','謝謝・問題','Cảm ơn · Hỏi đáp','全組']];
+const ADD={cover:['大家的合照','ảnh chụp chung cả nhóm'],job:['工作地方的照片','ảnh nơi làm việc (cửa hàng, quán…)'],week:['（不用加）','(không cần thêm)'],tr:['路上的照片或15秒影片','ảnh hoặc video ≤15 giây trên đường đi'],mo:['想買的東西的照片','ảnh món đồ muốn mua'],ba:['大家討論的照片','ảnh cả nhóm đang thảo luận'],end:['（不用加）','(không cần thêm)']};
+const RULES=[['每張投影片只放關鍵字，不要把說話稿貼上去。','Mỗi slide chỉ để từ khóa, không dán nguyên bài nói lên.'],['影片最多15秒。','Video tối đa 15 giây.'],['照片用自己拍的或Canva裡的；網路上的照片要寫出處。','Dùng ảnh tự chụp hoặc ảnh trong Canva; ảnh trên mạng phải ghi nguồn.'],['拍店家以前，要先問老闆可不可以拍。','Trước khi chụp cửa hàng, phải hỏi chủ quán có được chụp không.'],['上台的時候，看同學說話，不要看螢幕念。','Khi trình bày, nhìn các bạn mà nói, đừng quay lên màn hình đọc.']];
+function renderSlides(){const g=G();
+  $('#slideTable').innerHTML=`<thead><tr><th>#</th><th>投影片</th><th>誰做</th><th>截圖</th><th>自己加</th></tr></thead><tbody>${CARDS.map((c,i)=>`<tr><td class="mono">${i+1}</td><td>${c[1]}${tl(c[2])}</td><td>${c[3]==='全組'?'全組'+tl('cả nhóm'):esc(g.names[c[3]]||ROLES[c[3]].zh)}</td><td>${c[0]==='end'?'—':`<button class="mini add" data-shot="${c[0]}">截圖</button>`}</td><td>${ADD[c[0]][0]}${tl(ADD[c[0]][1])}</td></tr>`).join('')}</tbody>`;
+  $$('[data-shot]').forEach(b=>b.onclick=()=>openShot(b.dataset.shot));
+  $('#slideRules').innerHTML=RULES.map(r=>`<li>${r[0]}${tl(r[1])}</li>`).join('')}
+const SHOTS=CARDS.filter(c=>c[0]!=='end');let shotK='cover';
+function openShot(k){shotK=k;$('#shot').hidden=false;document.body.style.overflow='hidden';drawShot()}
+function closeShot(){$('#shot').hidden=true;document.body.style.overflow=''}
+$('#shotSel').innerHTML=SHOTS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('');
+$('#shotSel').onchange=e=>{shotK=e.target.value;drawShot()};
+$('#shotPrev').onclick=()=>{const i=SHOTS.findIndex(c=>c[0]===shotK);shotK=SHOTS[(i+SHOTS.length-1)%SHOTS.length][0];drawShot()};
+$('#shotNext').onclick=()=>{const i=SHOTS.findIndex(c=>c[0]===shotK);shotK=SHOTS[(i+1)%SHOTS.length][0];drawShot()};
+$('#shotClose').onclick=closeShot;
+document.addEventListener('keydown',e=>{if($('#shot').hidden)return;if(e.key==='Escape')closeShot();if(e.key==='ArrowRight')$('#shotNext').click();if(e.key==='ArrowLeft')$('#shotPrev').click()});
+function drawShot(){const g=G();const R=calc(g);const goal=goalOf(g);$('#shotSel').value=shotK;const card=CARDS.find(c=>c[0]===shotK);
+  const head=`<div class="s-head"><span class="s-title">${card[1]}</span><span class="s-meta">第${state.cur}組 · ${esc(g.pname)}的打工計畫</span></div>`;let body='';
+  if(shotK==='cover')body=`<div class="s-cols"><div style="display:grid;gap:1.2cqw;align-content:start"><div class="s-big">${esc(g.pname)}</div><div>17歲・中山工商僑生・住學校宿舍</div><div class="s-card">目標：${goal?esc(goal.n)+'<br><span style="font-size:1.7cqw">'+esc(goal.d)+'</span>':'？'}</div><div>${g.conds.map(id=>`<span class="cchip" style="font-size:1.8cqw">${esc(condOf(id).n)}</span>`).join('')}</div></div>
+    <div class="s-card">${ROLES.map((r,i)=>`<div class="s-row" style="--sc:var(--c-${r.k})"><span class="l">${r.zh}</span><span class="s-num" style="font-size:2.2cqw">${esc(g.names[i]||'＿＿')}</span></div>`).join('')}</div></div>`;
+  else if(shotK==='job'){const j=R.job;body=j?`<div class="s-cols"><div style="display:grid;gap:1.2cqw;align-content:start"><div class="s-big">${esc(j.n)}</div><div>${esc(LOCS[j.loc].n)}</div><div class="s-card">時薪 <span class="s-num">NT$${j.w}</span></div><div class="s-card">${esc(j.do)}${j.perk?'<br>'+esc(j.perk):''}</div></div>
+    <div class="s-card" style="display:grid;gap:.8cqw;align-content:start"><div><b>打工以前</b></div><div>・申請工作證</div><div>・家長同意書（未滿18歲）</div><div>・學期中每週最多20小時</div></div></div>`:'<div>還沒選工作。</div>'}
+  else if(shotK==='week')body=`<div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:2cqw"><div>${weekHTML(g,R)}</div><div style="display:grid;gap:1cqw;align-content:start"><div class="s-card">每週 <span class="s-num">${R.hours}</span> 小時</div><div class="s-card">休息 <span class="s-num">${R.restDays}</span> 天</div><div class="s-card">最少睡 <span class="s-num">${R.minSleep.toFixed(1).replace('.0','')}</span> 小時</div></div></div>`;
+  else if(shotK==='tr'){const c=R.com;body=c?`<div class="s-cols"><div style="display:grid;gap:1.2cqw;align-content:start"><div class="s-big">${MODES[c[0]].zh}</div><div>學校宿舍 → ${esc(R.loc.n)}</div></div><div style="display:grid;gap:1.2cqw;align-content:start"><div class="s-card">單程 <span class="s-num">${c[1]}分鐘・NT$${c[2]}</span></div><div class="s-card">一個禮拜 <span class="s-num">${R.trips}次</span></div><div class="s-card">一個月交通費 <span class="s-num">NT$${fmt(R.tcost)}</span></div></div></div>`:'<div>還沒選工作。</div>'}
+  else if(shotK==='mo'){const ok=R.saveAmt>=R.goal;body=`${metersHTML(R)}<div class="s-card"><table style="font-size:1.9cqw"><tr><td>收入</td><td class="mono" style="text-align:right">+${fmt(R.income)}</td></tr><tr><td>手機・吃飯・娛樂・日用品</td><td class="mono" style="text-align:right">−${fmt(R.exp.phone+R.exp.food+R.exp.fun+R.exp.daily)}</td></tr><tr><td>交通</td><td class="mono" style="text-align:right">−${fmt(R.exp.tr)}</td></tr>${R.exp.home?`<tr><td>寄回家</td><td class="mono" style="text-align:right">−${fmt(R.exp.home)}</td></tr>`:''}<tr><td><b>每月存</b></td><td class="mono" style="text-align:right"><b>${fmt(R.saveAmt)}</b></td></tr><tr><td>目標</td><td class="mono" style="text-align:right">${fmt(R.goal)} ${ok?'✓':''}</td></tr></table></div>`}
+  else if(shotK==='ba'){const b=g.before;const nowP=problems(R);
+    body=b?`<div class="s-ba"><div class="s-card"><div style="font-family:var(--f-display);font-size:3cqw">討論前</div><div>每月存 <span class="s-num">NT$${fmt(b.save)}</span></div><div>問題 <span class="s-num">${b.problems}</span> 個</div></div><div class="arrow">→</div>
+      <div class="s-card"><div style="font-family:var(--f-display);font-size:3cqw">討論後</div><div>每月存 <span class="s-num">NT$${fmt(R.saveAmt)}</span></div><div>問題 <span class="s-num">${nowP}</span> 個</div></div></div><div class="s-card">我們改了什麼：${g.changes?esc(g.changes):'＿＿＿＿'}</div>`:`<div class="s-card">還沒有「記錄討論前」。先到「⑥ 總整理」按「記錄討論前」。</div>`}
+  $('#slide').innerHTML=PRO(head+`<div class="s-body">${body}</div>`);refreshPy()}
+
+/* ---------- present ---------- */
+let spk=0,tLeft=120,tIv=null;
+function renderStage(){const g=G();const R=calc(g);
+  $('#speakers').innerHTML=ROLES.map((r,i)=>`<button data-s="${i}" aria-pressed="${i===spk}">${i+1}. ${r.zh}${g.names[i]?'・'+esc(g.names[i]):''}</button>`).join('');
+  $$('#speakers button').forEach(b=>b.onclick=()=>{spk=+b.dataset.s;resetT();render()});
+  const sc=[scriptJob,scriptSc,scriptTr,scriptMo][spk](g,R);
+  const side=spk===1?`<div class="weekwrap">${weekHTML(g,R)}</div>`:spk===0&&R.job?`<div class="opt"><h3>${esc(R.job.n)}</h3><div>${esc(LOCS[R.job.loc].n)}</div><div class="mono">時薪 NT$${R.job.w}</div></div>`:spk===2&&R.com?`<div class="opt"><h3>${MODES[R.com[0]].zh}</h3><div class="mono">單程 ${R.com[1]}分 · NT$${R.com[2]}</div></div>`:spk===3?metersHTML(R):'';
+  $('#stage').innerHTML=`<div class="plan-grid"><div style="min-width:0">${side}</div><div class="script" id="stageScript" ${$('#hideScript').checked?'hidden':''}>${sc}</div></div>`}
+function drawT(){const m=Math.floor(tLeft/60),s=tLeft%60;$('#timer').textContent=m+':'+String(s).padStart(2,'0');$('#timer').classList.toggle('low',tLeft<=20)}
+function resetT(){clearInterval(tIv);tIv=null;tLeft=120;drawT();$('#tStart').textContent='開始'}
+$('#tStart').onclick=()=>{if(tIv){clearInterval(tIv);tIv=null;$('#tStart').textContent='繼續';refreshPy();return}
+  $('#tStart').textContent='暫停';refreshPy();tIv=setInterval(()=>{if(tLeft>0){tLeft--;drawT()}else{clearInterval(tIv);tIv=null}},1000)};
+$('#tNext').onclick=()=>{spk=(spk+1)%4;resetT();render()};
+$('#hideScript').onchange=()=>{const s=$('#stageScript');if(s)s.hidden=$('#hideScript').checked};
+
+/* ---------- board ---------- */
+function renderBoard(){const tb=$('#boardTable tbody');tb.innerHTML='';let n=0;const keep=state.cur;
+  for(let i=1;i<=state.groups;i++){const g0=state.g[i];if(!g0||(g0.job&&g0.job.o<0&&!g0.goal)||!g0.goal)continue;n++;state.cur=i;const g=G();const R=calc(g);
+    const tr=document.createElement('tr');const ok=R.saveAmt>=R.goal;
+    tr.innerHTML=`<td class="mono">${i}</td><td>${R.job?esc(R.job.n):'—'}</td><td class="mono ${R.hours>20?'btotal over':''}">${R.hours}</td><td class="mono ${ok?'':'btotal over'}">NT$${fmt(R.saveAmt)}</td><td class="mono">NT$${fmt(R.goal)}</td>
+    <td class="row" style="gap:6px"><button class="btn ghost" data-v="${i}" data-d="-1" aria-label="減一票">−</button><span class="mono" style="min-width:2ch;text-align:center">${g.votes||0}</span><button class="btn ghost" data-v="${i}" data-d="1" aria-label="加一票">＋</button></td>`;tb.appendChild(tr)}
+  state.cur=keep;
+  if(!n)tb.innerHTML=`<tr><td colspan="6">還沒有組抽籤。${tl('Chưa có nhóm nào bốc thăm.')}</td></tr>`;
+  $$('#boardTable [data-v]').forEach(b=>b.onclick=()=>{const g=state.g[b.dataset.v];g.votes=Math.max(0,(g.votes||0)+ +b.dataset.d);persist();render()});
+  let best=null;for(let i=1;i<=state.groups;i++){const g=state.g[i];if(g&&g.votes&&(!best||g.votes>best.v))best={i,v:g.votes}}
+  $('#boardSum').innerHTML=best?`最聰明的計畫：第${best.i}組（${best.v}票）${tl('Kế hoạch thông minh nhất: nhóm '+best.i)}`:''}
+
+/* ---------- vocab ---------- */
+const VOC=[['工作',[['打工／工讀','dǎ gōng / gōng dú','làm thêm'],['時薪／月薪','shí xīn / yuè xīn','lương giờ / lương tháng'],['基本工資','jī běn gōng zī','lương tối thiểu'],['工作證','gōng zuò zhèng','giấy phép lao động'],['同意書','tóng yì shū','giấy đồng ý'],['面試','miàn shì','phỏng vấn'],['員工餐','yuán gōng cān','bữa ăn nhân viên'],['結帳','jié zhàng','tính tiền'],['補貨','bǔ huò','bổ sung hàng']]],
+ ['時間',[['排班／班表','pái bān / bān biǎo','xếp ca / lịch ca'],['早班／晚班','zǎo bān / wǎn bān','ca sáng / ca tối'],['大夜班','dà yè bān','ca đêm'],['上班／下班','shàng bān / xià bān','đi làm / tan làm'],['休息','xiū xi','nghỉ ngơi'],['門禁','mén jìn','giờ đóng cửa (KTX)'],['衝突','chōng tú','trùng, xung đột'],['睡飽','shuì bǎo','ngủ đủ']]],
+ ['錢',[['收入／支出','shōu rù / zhī chū','thu nhập / chi tiêu'],['存錢','cún qián','để dành tiền'],['目標','mù biāo','mục tiêu'],['月租','yuè zū','phí thuê bao tháng'],['日用品','rì yòng pǐn','đồ dùng hằng ngày'],['寄錢回家','jì qián huí jiā','gửi tiền về nhà'],['賺','zhuàn','kiếm (tiền)'],['還差','hái chà','còn thiếu']]]];
+const GR=[['從……到……','他從晚上六點到十點上班。','Từ… đến…'],['一個禮拜＋次數／時間','他一個禮拜打工十六個小時。','Một tuần … lần / … giờ'],['A × B = …（一個月可以賺…）','十六個小時乘以兩百塊，一個月大概可以賺一萬兩千八百塊。','Tính thu nhập'],['A 比 B ＋ adj.','家教的時薪比便利商店高，可是離宿舍比較遠。','A … hơn B'],['雖然……但是……','雖然大夜班的時薪比較高，但是他第二天要上課。','Tuy… nhưng…'],['因為……所以……','因為宿舍十點門禁，所以他不能上晚班。','Vì… nên…'],['如果……就……','如果錢不夠，他就少喝飲料。','Nếu… thì…'],['還差……','他每個月還差兩千塊。','Còn thiếu…']];
+$('#vocabOut').innerHTML=VOC.map(([h,l])=>`<h2>${h}</h2><div class="vgrid">${l.map(v=>`<div class="v"><div class="zh nopy">${v[0]}</div><div class="py">${v[1]}</div>${tl(v[2])}</div>`).join('')}</div>`).join('')+
+ `<h2>句型</h2><div class="gram">${GR.map(g=>`<div class="g"><div class="pat">${g[0]}</div>${tl(g[2])}<div class="ex">${g[1]}</div></div>`).join('')}</div>`;
+
+/* ---------- init ---------- */
+$$('[data-tl]').forEach(el=>el.insertAdjacentHTML('beforeend',tl(el.dataset.tl)));
+function setSeg(seg,v){seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v))}
+$('#segPy').onclick=e=>{const b=e.target.closest('button');if(!b)return;pyOn=b.dataset.v==='on';setSeg($('#segPy'),b.dataset.v);$('#wrap').classList.toggle('pyon',pyOn);save('py',pyOn);refreshPy()};
+$('#segLang').onclick=e=>{const b=e.target.closest('button');if(!b)return;$('#wrap').dataset.lang=b.dataset.v;setSeg($('#segLang'),b.dataset.v);save('lang',b.dataset.v);render()};
+pyOn=load('py',true);setSeg($('#segPy'),pyOn?'on':'off');$('#wrap').classList.toggle('pyon',pyOn);
+const lg=load('lang','vi');$('#wrap').dataset.lang=lg;setSeg($('#segLang'),lg);
+grpOptions();const t0=load('tab','draw');show(panels.includes(t0)?t0:'draw');
+})();
+</script>
+
+</body>
+</html>
